@@ -3,6 +3,7 @@ import json
 import logging
 import asyncio
 import signal
+from aio_pika.abc import AbstractIncomingMessage
 from utils import (
     cleanup_files,
     convert_doc_to_docx,
@@ -25,7 +26,7 @@ logger = logging.getLogger("rabbitmq_consumer")
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
 
-async def process_message(message):
+async def process_message(message:AbstractIncomingMessage):
     """
     Processes a message from the RabbitMQ queue.
 
