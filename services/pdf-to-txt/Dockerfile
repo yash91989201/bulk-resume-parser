@@ -1,5 +1,5 @@
 # Stage 1: Base image with build dependencies
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 # Set environment variables for Python
 ENV PYTHONUNBUFFERED=1 \
