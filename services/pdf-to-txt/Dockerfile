@@ -37,4 +37,3 @@ COPY . /app
 
 # Set the entrypoint for the container
 ENTRYPOINT ["python", "-u", "main.py"]
-

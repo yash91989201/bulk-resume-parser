@@ -1,0 +1,111 @@
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    networks:
+      - bulk-resume-parser
+    ports:
+      - "5672:5672" # RabbitMQ messaging port
+      - "15672:15672" # RabbitMQ management UI
+    environment:
+      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    networks:
+      - bulk-resume-parser
+    ports:
+      - "9000:9000" # MinIO API port
+      - "9001:9001" # MinIO Console port
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+  extract-archive:
+    build:
+      context: ./services/extract-archive
+    image: extract-archive-service:latest
+    container_name: extract-archive
+    networks:
+      - bulk-resume-parser
+    depends_on:
+      - rabbitmq
+      - minio
+    environment:
+      S3_HOST: "${S3_HOST}"
+      S3_PORT: "${S3_PORT}"
+      S3_USE_SSL: "${S3_USE_SSL}"
+      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
+      S3_SECRET_KEY: "${S3_SECRET_KEY}"
+      RABBITMQ_HOST: "${RABBITMQ_HOST}"
+      RABBITMQ_PORT: "${RABBITMQ_PORT}"
+      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+
+  app:
+    build:
+      context: .
+    image: bulk-resume-parser:latest
+    container_name: app
+    networks:
+      - bulk-resume-parser
+    environment:
+      S3_HOST: "${S3_HOST}"
+      S3_PORT: "${S3_PORT}"
+      S3_USE_SSL: "${S3_USE_SSL}"
+      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
+      S3_SECRET_KEY: "${S3_SECRET_KEY}"
+      DATABASE_URL: "${DATABASE_URL}"
+      RABBITMQ_URL: "${RABBITMQ_URL}"
+      BETTER_AUTH_URL: "${BETTER_AUTH_URL}"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET}"
+      NEXT_PUBLIC_BETTER_AUTH_URL: "${NEXT_PUBLIC_BETTER_AUTH_URL}"
+
+  app-db:
+    image: mysql:latest
+    container_name: app-db
+    networks:
+      - bulk-resume-parser
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin --user=root --password=${DB_ROOT_PASSWORD} --host=localhost --port=3306 ping",
+        ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+
+  app-db-migrator:
+    build:
+      context: .
+      dockerfile: db-migrator.Dockerfile
+    container_name: app-db-migrator
+    networks:
+      - bulk-resume-parser
+    environment:
+      DATABASE_URL: "${DATABASE_URL}"
+    depends_on:
+      app-db:
+        condition: service_healthy
+    restart: on-failure
+
+networks:
+  bulk-resume-parser:
+    name: bulk-resume-parser
+
+volumes:
+  minio-data:

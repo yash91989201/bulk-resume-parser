@@ -93,7 +93,6 @@ async def worker(task_queue, worker_id):
         except Exception as e:
             logger.exception(f"Worker {worker_id} encountered an error: {e}")
 
-
 async def start_message_consumer():
     """
     Initializes and starts the RabbitMQ message consumer.
