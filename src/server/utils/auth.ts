@@ -11,8 +11,10 @@ import {
 } from "@/server/db/schema";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { env } from "@/env";
 
 export const auth = betterAuth({
+  secret: env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, {
     provider: "mysql",
     schema: {
