@@ -142,6 +142,8 @@ services:
     container_name: app
     networks:
       - bulk-resume-parser
+    ports:
+      - "3000:3000"
     environment:
       S3_HOST: "${S3_HOST}"
       S3_PORT: "${S3_PORT}"
