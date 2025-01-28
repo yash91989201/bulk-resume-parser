@@ -51,7 +51,7 @@ services:
     build:
       context: ./services/word-to-txt
     image: word-to-txt-service:latest
-    container_name: word-to-txt 
+    container_name: word-to-txt
     networks:
       - bulk-resume-parser
     depends_on:
@@ -72,7 +72,7 @@ services:
     build:
       context: ./services/pdf-to-txt
     image: pdf-to-txt-service:latest
-    container_name: pdf-to-txt 
+    container_name: pdf-to-txt
     networks:
       - bulk-resume-parser
     depends_on:
@@ -93,7 +93,7 @@ services:
     build:
       context: ./services/img-to-txt
     image: img-to-txt-service:latest
-    container_name: img-to-txt 
+    container_name: img-to-txt
     networks:
       - bulk-resume-parser
     depends_on:
@@ -113,6 +113,17 @@ services:
   app:
     build:
       context: .
+      args:
+        S3_HOST: "${S3_HOST}"
+        S3_PORT: "${S3_PORT}"
+        S3_USE_SSL: "${S3_USE_SSL}"
+        S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
+        S3_SECRET_KEY: "${S3_SECRET_KEY}"
+        DATABASE_URL: "${DATABASE_URL}"
+        RABBITMQ_URL: "${RABBITMQ_URL}"
+        BETTER_AUTH_URL: "${BETTER_AUTH_URL}"
+        BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET}"
+        NEXT_PUBLIC_BETTER_AUTH_URL: "${NEXT_PUBLIC_BETTER_AUTH_URL}"
     image: bulk-resume-parser:latest
     container_name: app
     networks:

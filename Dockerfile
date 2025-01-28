@@ -2,7 +2,30 @@ FROM oven/bun AS base
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json .
+
+# Pass build arguments as environment variables
+ARG DATABASE_URL
+ARG BETTER_AUTH_URL
+ARG BETTER_AUTH_SECRET
+ARG S3_HOST
+ARG S3_PORT
+ARG S3_ACCESS_KEY
+ARG S3_SECRET_KEY
+ARG S3_USE_SSL
+ARG RABBITMQ_URL
+ARG NEXT_PUBLIC_BETTER_AUTH_URL
+
+ENV DATABASE_URL=${DATABASE_URL}
+ENV BETTER_AUTH_URL=${BETTER_AUTH_URL}
+ENV BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+ENV S3_HOST=${S3_HOST}
+ENV S3_PORT=${S3_PORT}
+ENV S3_ACCESS_KEY=${S3_ACCESS_KEY}
+ENV S3_SECRET_KEY=${S3_SECRET_KEY}
+ENV S3_USE_SSL=${S3_USE_SSL}
+ENV RABBITMQ_URL=${RABBITMQ_URL}
+ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
 
 RUN bun install
 
@@ -10,15 +33,14 @@ COPY . .
 
 RUN bun run build
 
-FROM oven/bun:alpine AS final
+FROM oven/bun AS final
 
 WORKDIR /app
 
-COPY --from=base /app/.next/standalone ./
+COPY --from=base /app/.next/standalone .
 COPY --from=base /app/.next/static ./.next/static
 COPY --from=base /app/public ./public
 
 EXPOSE 3000
 
-# Start the application
 CMD ["bun", "server.js"]
