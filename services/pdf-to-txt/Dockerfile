@@ -36,5 +36,5 @@ COPY --from=builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
 COPY . /app
 
 # Set the entrypoint for the container
-CMD ["python", "-u", "main.py"]
+ENTRYPOINT ["python", "-u", "main.py"]
 
