@@ -1,0 +1,4 @@
+PyPDF2==3.0.1
+aiofiles==24.1.0
+aio-pika==9.5.4
+minio==7.2.15
