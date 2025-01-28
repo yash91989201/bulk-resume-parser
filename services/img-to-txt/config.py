@@ -10,7 +10,7 @@ class RABBITMQ_CONFIG:
     PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
 
 class MINIO_CONFIG:
-    ENDPOINT = f"{os.getenv("S3_HOST", "localhost")}:{os.getenv("S3_PORT",9000)}"
+    ENDPOINT = f"{os.getenv('S3_HOST', 'localhost')}:{os.getenv('S3_PORT',9000)}"
     ACCESS_KEY = os.getenv("S3_ACCESS_KEY","85cBsFp5EOGhDLsPQkur")
     SECRET_KEY = os.getenv("S3_SECRET_KEY","UaGUBdEj35JxvvFXpiuF2cWApLz7SLZ1pF89Ckza")
     SECURE = os.getenv("S3_USE_SSL", "False").lower() == "true"
