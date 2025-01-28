@@ -13,6 +13,7 @@ export const env = createEnv({
       .default("development"),
     BETTER_AUTH_URL: z.string(),
     BETTER_AUTH_SECRET: z.string(),
+    BETTER_AUTH_TRUSTED_ORIGINS: z.string(),
     S3_HOST: z.string(),
     S3_PORT: z
       .string()
@@ -49,6 +50,7 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    BETTER_AUTH_TRUSTED_ORIGINS: process.env.BETTER_AUTH_TRUSTED_ORIGINS,
     S3_HOST: process.env.S3_HOST,
     S3_PORT: process.env.S3_PORT,
     S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,

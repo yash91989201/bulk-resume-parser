@@ -21,6 +21,8 @@ services:
     image: redis:latest
     container_name: redis
     restart: always
+    networks:
+      - bulk-resume-parser
     ports:
       - "6379:6379"
     healthcheck:
@@ -207,6 +209,7 @@ services:
         RABBITMQ_URL: "${RABBITMQ_URL}"
         BETTER_AUTH_URL: "${BETTER_AUTH_URL}"
         BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET}"
+        BETTER_AUTH_TRUSTED_ORIGINS: "${BETTER_AUTH_TRUSTED_ORIGINS}"
         NEXT_PUBLIC_BETTER_AUTH_URL: "${NEXT_PUBLIC_BETTER_AUTH_URL}"
     image: bulk-resume-parser:latest
     container_name: app
@@ -224,6 +227,7 @@ services:
       RABBITMQ_URL: "${RABBITMQ_URL}"
       BETTER_AUTH_URL: "${BETTER_AUTH_URL}"
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET}"
+      BETTER_AUTH_TRUSTED_ORIGINS: "${BETTER_AUTH_TRUSTED_ORIGINS}"
       NEXT_PUBLIC_BETTER_AUTH_URL: "${NEXT_PUBLIC_BETTER_AUTH_URL}"
 
   app-db:
