@@ -83,11 +83,11 @@ export function createFormData(files: File[]): FormData {
 export const getBucketFilesInfo = async ({
   taskId,
   bucketName,
-  filesMetaData,
+  filesMetadata,
 }: {
   taskId: string;
   bucketName: string;
-  filesMetaData: FileMetadataType[];
+  filesMetadata: FileMetadataType[];
 }) => {
   const response = await fetch(
     `/api/presigned-url/${bucketName}?taskId=${taskId}`,
@@ -96,7 +96,7 @@ export const getBucketFilesInfo = async ({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ filesMetaData }),
+      body: JSON.stringify({ filesMetadata }),
     },
   );
 

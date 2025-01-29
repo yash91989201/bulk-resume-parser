@@ -70,19 +70,19 @@ export const ParsingTaskForm = () => {
 
       const taskId = createParsingTaskRes.data.taskId;
 
-      const filesMetaData = taskFilesState.map(({ file }) => ({
+      const filesMetadata = taskFilesState.map(({ file }) => ({
         originalName: file.name,
         contentType: file.type,
         size: file.size,
       }));
 
-      const allArchiveFiles = filesMetaData.every((file) =>
+      const allArchiveFiles = filesMetadata.every((file) =>
         ACCEPTED_FILE_TYPES.ARCHIVE_FILES.includes(file.contentType),
       );
 
       const bucketFilesInfo = await getBucketFilesInfo({
         taskId,
-        filesMetaData: filesMetaData,
+        filesMetadata: filesMetadata,
         bucketName: allArchiveFiles
           ? STORAGE_BUCKETS.ARCHIVE_FILES
           : STORAGE_BUCKETS.PARSEABLE_FILES,
