@@ -19,12 +19,7 @@ minio_client = Minio(
 )
 
 async def get_rabbit_mq_connection():
-    connection = await aio_pika.connect_robust(
-        host=RABBITMQ_CONFIG.HOST,
-        port=RABBITMQ_CONFIG.PORT,
-        login=RABBITMQ_CONFIG.USERNAME,
-        password=RABBITMQ_CONFIG.PASSWORD
-    )
+    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
 
     return connection
 
