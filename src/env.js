@@ -14,13 +14,7 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.string(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_TRUSTED_ORIGINS: z.string(),
-    S3_HOST: z.string(),
-    S3_PORT: z
-      .string()
-      .refine((val) => !isNaN(Number(val)), {
-        message: "S3_PORT must be a valid number",
-      })
-      .transform((val) => Number(val)),
+    S3_ENDPOINT: z.string(),
     S3_ACCESS_KEY: z.string(),
     S3_SECRET_KEY: z.string(),
     S3_USE_SSL: z
@@ -51,8 +45,7 @@ export const env = createEnv({
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_TRUSTED_ORIGINS: process.env.BETTER_AUTH_TRUSTED_ORIGINS,
-    S3_HOST: process.env.S3_HOST,
-    S3_PORT: process.env.S3_PORT,
+    S3_ENDPOINT: process.env.S3_ENDPOINT,
     S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
     S3_SECRET_KEY: process.env.S3_SECRET_KEY,
     S3_USE_SSL: process.env.S3_USE_SSL,

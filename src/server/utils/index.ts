@@ -35,8 +35,8 @@ export const nodeStreamToWebReadable = (
 };
 
 export const s3Client = new Minio.Client({
-  endPoint: env.S3_HOST,
-  port: env.S3_PORT,
+  endPoint: env.S3_ENDPOINT,
+  port: 9000,
   accessKey: env.S3_ACCESS_KEY,
   secretKey: env.S3_SECRET_KEY,
   useSSL: env.S3_USE_SSL,
