@@ -3,18 +3,14 @@ import os
 class CONFIG:
     EXTRACTION_DIRECTORY = "/tmp/extracted"
 
-class RABBITMQ_CONFIG:
-    HOST = os.getenv("RABBITMQ_HOST")
-    PORT = int(os.getenv("RABBITMQ_PORT", 5672))
-    USERNAME = os.getenv("RABBITMQ_USERNAME")
-    PASSWORD = os.getenv("RABBITMQ_PASSWORD")
-
-
 class MINIO_CONFIG:
-    ENDPOINT = f"{os.getenv('S3_HOST', 'localhost')}:{os.getenv('S3_PORT',9000)}"
+    ENDPOINT = os.getenv("S3_ENDPOINT","localhost:9000") 
     SECURE = os.getenv("S3_USE_SSL", "False").lower() == "true"
-    ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
-    SECRET_KEY = os.getenv("S3_SECRET_KEY")
+    ACCESS_KEY = os.getenv("S3_ACCESS_KEY","85cBsFp5EOGhDLsPQkur")
+    SECRET_KEY = os.getenv("S3_SECRET_KEY","UaGUBdEj35JxvvFXpiuF2cWApLz7SLZ1pF89Ckza")
+
+class RABBITMQ_CONFIG:
+    URL = os.getenv("RABBITMQ_URL","aqmp://localhost:5672")
 
 class QUEUES:
     EXTRACT_ARCHIVE = "extract_archive_queue"
