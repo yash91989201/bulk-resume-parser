@@ -57,11 +57,11 @@ async def process_message(message:AbstractIncomingMessage):
         await append_to_excel_file(extracted_data, excel_file_path)
 
         # Update processed files count
-        processed_files += 1
-        await update_parsing_task(task_id, {"processed_files" : processed_files})
+        updated_processed_files = processed_files + 1
+        await update_parsing_task(task_id, {"processedFiles" : updated_processed_files})
 
         # Upload Excel file to MinIO if processing is complete
-        if processed_files == processable_files:
+        if updated_processed_files == processable_files:
             minio_object_path = await upload_excel_file(user_id, task_id, excel_file_path)
             await update_parsing_task(task_id, {"sheetFilePath": minio_object_path})
             await cleanup_files([excel_file_path])

@@ -64,18 +64,18 @@ async def fetch_parsing_task(task_id: str) -> ParsingTask:
         async with session.get(url) as response:
             if response.status == 200:
                 data = await response.json()
-
+                parsing_task = data["data"]["parsingTask"] 
                 return ParsingTask(
-                    id=data["id"],
-                    taskName=data["taskName"],
-                    taskStatus=TaskStatus(data["taskStatus"]),
-                    totalFiles=data["totalFiles"],
-                    processedFiles=data["processedFiles"],
-                    invalidFiles=data["invalidFiles"],
-                    jsonFilePath=data.get("jsonFilePath"),  
-                    sheetFilePath=data.get("sheetFilePath"),
-                    errorMessage=data.get("errorMessage"), 
-                    userId=data["userId"],
+                    id=parsing_task["id"],
+                    taskName=parsing_task["taskName"],
+                    taskStatus=TaskStatus(parsing_task["taskStatus"]),
+                    totalFiles=parsing_task["totalFiles"],
+                    processedFiles=parsing_task["processedFiles"],
+                    invalidFiles=parsing_task["invalidFiles"],
+                    jsonFilePath=parsing_task.get("jsonFilePath"),  
+                    sheetFilePath=parsing_task.get("sheetFilePath"),
+                    errorMessage=parsing_task.get("errorMessage"), 
+                    userId=parsing_task["userId"],
                 )
             else:
                 # Raise an exception if the request fails

@@ -55,6 +55,8 @@ def extract_pdf_to_txt_file(pdf_file_path:str)-> str:
             txt_file.write(text_content)
 
     except Exception as _:
+        with open(txt_file_path, "w", encoding="utf-8") as txt_file:
+            txt_file.write("")
         return txt_file_path
     return txt_file_path
 
