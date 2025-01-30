@@ -5,6 +5,7 @@ import signal
 import aio_pika
 from config import APP_CONFIG, MINIO_BUCKETS,  QUEUES, RABBITMQ_CONFIG
 from utils import (
+    get_rabbit_mq_connection,
     logger,
     extract_data, 
     cleanup_files, 
@@ -84,13 +85,8 @@ async def start_consumer(keys):
     """
     Start the RabbitMQ consumer.
     """
-    connection = await aio_pika.connect_robust(
-        host=RABBITMQ_CONFIG.HOST,
-        port=RABBITMQ_CONFIG.PORT,
-        login=RABBITMQ_CONFIG.USERNAME,
-        password=RABBITMQ_CONFIG.PASSWORD
-    )
-    
+    connection = await get_rabbit_mq_connection()
+
     async with connection:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=APP_CONFIG.CONCURRENCY)
