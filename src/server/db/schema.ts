@@ -43,6 +43,8 @@ export const parsingTaskTable = mysqlTable("parsing_task", {
   jsonFilePath: varchar("json_file_path", { length: 255 }),
   sheetFilePath: varchar("sheet_file_path", { length: 255 }),
   errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
   userId: varchar("user_id", { length: 36 })
     .notNull()
     .references(() => userTable.id),
