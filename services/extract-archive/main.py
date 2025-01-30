@@ -1,11 +1,12 @@
 import os
 import json
 import signal
-import logging
 import asyncio
+from dotenv import load_dotenv
 from aio_pika.abc import AbstractIncomingMessage
 from config import  CONFIG, QUEUES
 from utils import (
+    logger,
     cleanup_extracted_files,
     cleanup_extraction_dir,
     download_archive_files,
@@ -16,12 +17,7 @@ from utils import (
     upload_by_file_type
 )
 
-# Logging Configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger("rabbitmq_consumer")
+load_dotenv()
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()

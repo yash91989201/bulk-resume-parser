@@ -15,6 +15,15 @@ from minio import Minio
 from config import CONFIG, MINIO_BUCKETS, MINIO_CONFIG, QUEUES, RABBITMQ_CONFIG
 from dataclasses import dataclass
 
+# Logging Configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+logger = logging.getLogger("rabbitmq_consumer")
+
+
 mimetypes.init()
 
 SUPPORTED_FILES_EXT = [".doc",".docx",".pdf",".jpg",".jpeg",".png",".webp"]
@@ -103,28 +112,28 @@ async def update_task_file_count(
 
                 if response.status == 200:
                     if response_data.get("status") == "SUCCESS":
-                        logging.info(f"Task {task_id}: Successfully updated file counts in parsing task")
+                        logger.info(f"Task {task_id}: Successfully updated file counts in parsing task")
                         return True
                     
-                    logging.error(
+                    logger.error(
                         f"Task {task_id}: API returned error: {response_data.get('message')}"
                     )
                     return False
 
-                logging.error(
+                logger.error(
                     f"Task {task_id}: Failed to update counts. "
                     f"Status: {response.status}, Error: {response_data.get('message')}"
                 )
                 return False
 
     except aiohttp.ClientError as e:
-        logging.error(f"Task {task_id}: Connection error updating counts: {str(e)}")
+        logger.error(f"Task {task_id}: Connection error updating counts: {str(e)}")
         return False
     except json.JSONDecodeError:
-        logging.error(f"Task {task_id}: Invalid JSON response from API")
+        logger.error(f"Task {task_id}: Invalid JSON response from API")
         return False
     except Exception as e:
-        logging.error(f"Task {task_id}: Unexpected error updating counts: {str(e)}")
+        logger.error(f"Task {task_id}: Unexpected error updating counts: {str(e)}")
         return False
 
 async def insert_parseable_files(taskId: str, parseableFiles:List[ParseableFile]) ->bool :
@@ -298,13 +307,13 @@ async def cleanup_extracted_files(file_paths: List[str]):
     for file_path in file_paths:
         try:
             await asyncio.to_thread(os.remove, file_path)  # Run `os.remove` in a thread
-            logging.info(f"Deleted temporary file: {file_path}")
+            logger.info(f"Deleted temporary file: {file_path}")
         except FileNotFoundError:
-            logging.warning(f"File not found: {file_path}")
+            logger.warning(f"File not found: {file_path}")
         except PermissionError:
-            logging.error(f"Permission denied: {file_path}")
+            logger.error(f"Permission denied: {file_path}")
         except Exception as e:
-            logging.error(f"Error deleting {file_path}: {e}")
+            logger.error(f"Error deleting {file_path}: {e}")
 
 
 def cleanup_extraction_dir( extraction_directory: str):
