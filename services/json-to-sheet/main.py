@@ -3,23 +3,27 @@ import asyncio
 import signal
 import os
 from aio_pika.abc import AbstractIncomingMessage
-import hashlib
+from collections import defaultdict
 from config import SERVICE_CONFIG, QUEUES
 from utils import (
-        logger,
-        append_to_excel_file, 
-        cleanup_files, 
-        download_json_file, 
-        fetch_parsing_task, 
-        get_rabbit_mq_connection, 
-        update_parsing_task, 
-        upload_excel_file
+    logger,
+    append_to_excel_file, 
+    cleanup_files, 
+    download_json_file, 
+    fetch_parsing_task, 
+    get_rabbit_mq_connection, 
+    update_parsing_task, 
+    upload_excel_file,
+    TaskStatus
 )
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
 
-async def process_message(message:AbstractIncomingMessage):
+# Global dictionary to hold locks for each task
+task_locks = defaultdict(asyncio.Lock)
+
+async def process_message(message: AbstractIncomingMessage):
     """Processes a single RabbitMQ message."""
     try:
         # Parse and validate the message
@@ -33,140 +37,107 @@ async def process_message(message:AbstractIncomingMessage):
 
         logger.info(f"Processing data for user {user_id}, task {task_id}")
 
-        # Fetch task status
-        parsing_task= await fetch_parsing_task(task_id)
+        # Download JSON file (parallelizable)
+        json_file_path = await download_json_file(file_path)
 
-        processed_files = parsing_task.processedFiles
-        processable_files = parsing_task.totalFiles - parsing_task.invalidFiles
-
-        # Define file paths
-        json_file_path = await download_json_file(file_path) 
-        excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, user_id, task_id, f"{task_id}.xlsx")
-
-        # Load and process the JSON data
+        # Process JSON data (in memory)
         with open(json_file_path, 'r') as json_file:
             extracted_data = json.load(json_file)
 
-        await append_to_excel_file(extracted_data, excel_file_path)
+        # Acquire per-task lock to synchronize critical sections
+        async with task_locks[task_id]:
+            # Fetch the latest task status under lock
+            parsing_task = await fetch_parsing_task(task_id)
+            if parsing_task.taskStatus in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+                logger.info(f"Task {task_id} is {parsing_task.taskStatus}, skipping.")
+                await message.ack()
+                await cleanup_files([json_file_path])
+                return
 
-        # Update processed files count
-        updated_processed_files = processed_files + 1
-        await update_parsing_task(task_id, {"processedFiles" : updated_processed_files})
+            processed_files = parsing_task.processedFiles
+            processable_files = parsing_task.totalFiles - parsing_task.invalidFiles
 
-        # Upload Excel file to MinIO if processing is complete
-        if updated_processed_files == processable_files:
-            minio_object_path = await upload_excel_file(user_id, task_id, excel_file_path)
-            await update_parsing_task(task_id, {"sheetFilePath": minio_object_path})
-            await cleanup_files([excel_file_path])
+            # Append data to Excel (synchronized)
+            excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, user_id, task_id, f"{task_id}.xlsx")
+            await append_to_excel_file(extracted_data, excel_file_path)
 
-        # Cleanup downloaded JSON file
+            # Update processed files count (synchronized)
+            updated_processed_files = processed_files + 1
+            await update_parsing_task(task_id, {"processedFiles": updated_processed_files})
+
+            # Finalize if all files processed
+            if updated_processed_files == processable_files:
+                minio_object_path = await upload_excel_file(user_id, task_id, excel_file_path)
+                await update_parsing_task(task_id, {
+                    "sheetFilePath": minio_object_path,
+                    "taskStatus": TaskStatus.COMPLETED.value
+                })
+                await cleanup_files([excel_file_path])
+                logger.info(f"Task {task_id} completed.")
+            elif parsing_task.taskStatus != TaskStatus.AGGREGATING:
+                await update_parsing_task(task_id, {"taskStatus": TaskStatus.AGGREGATING.value})
+
+        # Cleanup JSON file (outside lock)
         await cleanup_files([json_file_path])
 
-        logger.info("Processing completed successfully.")
         await message.ack()
+        logger.info(f"Processed file {file_path} for task {task_id}")
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         await message.nack(requeue=False)
 
-
 async def worker(task_queue, worker_id):
-    """
-    Worker function that processes messages from the task queue.
-    """
+    """Worker function processing messages from a shared queue."""
     while not shutdown_event.is_set():
         try:
             message = await task_queue.get()
-            logger.info(f"Worker {worker_id} processing message: {message.body.decode()}")
+            logger.info(f"Worker {worker_id} processing message")
             await process_message(message)
             task_queue.task_done()
         except Exception as e:
-            logger.error(f"Worker {worker_id} encountered an error: {e}")
-
-def get_worker_id(task_id, total_workers):
-    """
-    Hashes the taskId to assign it to a specific worker.
-    """
-    # Use a hash function (e.g., SHA-256) to generate a consistent worker ID
-    hash_value = hashlib.sha256(task_id.encode()).hexdigest()
-    # Convert the hash to an integer and modulo it by the number of workers
-    worker_id = int(hash_value, 16) % total_workers
-    return worker_id
+            logger.error(f"Worker {worker_id} error: {e}")
 
 async def start_message_consumer():
-    """
-    Initializes and starts the RabbitMQ message consumer with a worker pool.
-    """
-    total_workers = 10  # Number of workers
+    """Start consumer with a shared queue and multiple workers."""
+    total_workers = 10  # Adjust based on system capacity
     while not shutdown_event.is_set():
         try:
             connection = await get_rabbit_mq_connection()
-
             async with connection:
                 channel = await connection.channel()
-
-                # Set QoS to allow multiple unacknowledged messages
-                await channel.set_qos(prefetch_count=10)  # Allow up to 10 concurrent messages
-
-                # Declare the queue
+                await channel.set_qos(prefetch_count=100)  # Higher for more parallelism
                 queue = await channel.declare_queue(QUEUES.JSON_TO_SHEET, durable=True)
 
-                # Task queue and worker pool
-                task_queues = [asyncio.Queue(maxsize=10) for _ in range(total_workers)]  # One queue per worker
-                workers = [asyncio.create_task(worker(task_queues[i], i)) for i in range(total_workers)]
+                task_queue = asyncio.Queue()
+                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(total_workers)]
 
                 async def enqueue_message(message):
-                    """Assigns the message to a worker based on taskId."""
-                    try:
-                        message_data = json.loads(message.body)
-                        task_id = message_data.get("taskId")
-                        if not task_id:
-                            raise ValueError("taskId is missing in the message")
+                    await task_queue.put(message)
 
-                        # Assign the message to a worker based on taskId
-                        worker_id = get_worker_id(task_id, total_workers)
-                        await task_queues[worker_id].put(message)
-                        logger.info(f"Assigned task {task_id} to worker {worker_id}")
-                    except Exception as e:
-                        logger.error(f"Error assigning message to worker: {e}")
-                        await message.nack(requeue=False)
-
-                # Start consuming messages
                 await queue.consume(enqueue_message)
-
                 logger.info("Waiting for messages...")
-                await shutdown_event.wait()  # Wait for shutdown signal
+                await shutdown_event.wait()
 
-                # Graceful shutdown: Wait for all tasks to complete
+                # Shutdown gracefully
                 logger.info("Shutting down workers...")
-                for q in task_queues:
-                    await q.join()
-
-                # Cancel worker tasks
+                await task_queue.join()
                 for w in workers:
                     w.cancel()
-
-                # Wait for workers to exit
                 await asyncio.gather(*workers, return_exceptions=True)
 
         except Exception as e:
-            logger.error(f"Consumer error: {e}. Reconnecting in 5 seconds...")
+            logger.error(f"Consumer error: {e}. Reconnecting...")
             await asyncio.sleep(5)
 
 async def graceful_shutdown(signal):
-    """
-    Handles graceful shutdown on receiving a signal.
-    """
-    logger.info(f"Received {signal.name}. Initiating shutdown...")
-    shutdown_event.set()  # Signal all components to stop
-    logger.info("Application is shutting down. Waiting for tasks to finish...")
+    """Handle shutdown signal."""
+    logger.info(f"Received {signal.name}. Shutting down...")
+    shutdown_event.set()
 
 async def main():
-    """
-    Main function to start the application.
-    """
+    """Main application setup."""
     os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
-
     await start_message_consumer()
 
 if __name__ == "__main__":
@@ -178,11 +149,8 @@ if __name__ == "__main__":
             loop.add_signal_handler(
                 sig, lambda s=sig: asyncio.create_task(graceful_shutdown(s))
             )
-
         logger.info("Starting RabbitMQ consumer...")
         loop.run_until_complete(main())
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
     finally:
-        logger.info("Consumer stopped. Exiting...")
         loop.close()
+        logger.info("Consumer stopped.")
