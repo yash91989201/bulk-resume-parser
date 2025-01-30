@@ -4,7 +4,7 @@ import signal
 import os
 from aio_pika.abc import AbstractIncomingMessage
 import hashlib
-from config import CONFIG, QUEUES
+from config import SERVICE_CONFIG, QUEUES
 from utils import (
         logger,
         append_to_excel_file, 
@@ -41,7 +41,7 @@ async def process_message(message:AbstractIncomingMessage):
 
         # Define file paths
         json_file_path = await download_json_file(file_path) 
-        excel_file_path = os.path.join(CONFIG.DOWNLOAD_DIR, user_id, task_id, f"{task_id}.xlsx")
+        excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, user_id, task_id, f"{task_id}.xlsx")
 
         # Load and process the JSON data
         with open(json_file_path, 'r') as json_file:
@@ -165,7 +165,7 @@ async def main():
     """
     Main function to start the application.
     """
-    os.makedirs(CONFIG.DOWNLOAD_DIR, exist_ok=True)
+    os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
 
     await start_message_consumer()
 

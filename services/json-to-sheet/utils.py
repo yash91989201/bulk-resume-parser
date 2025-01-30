@@ -4,7 +4,7 @@ import pandas as pd
 import logging
 import os
 import aio_pika
-from config import CONFIG, MINIO_BUCKETS
+from config import SERVICE_CONFIG, MINIO_BUCKETS
 from minio import Minio
 import aiohttp
 from config import MINIO_CONFIG, RABBITMQ_CONFIG
@@ -115,7 +115,7 @@ async def download_json_file(file_path:str)->str:
     Returns:
         The local file path.
     """
-    local_file_path = os.path.join(CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+    local_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
     minio_client.fget_object(MINIO_BUCKETS.PROCESSED_JSON_FILES, file_path, local_file_path)
     return local_file_path
 
