@@ -161,7 +161,7 @@ async def extract_data(text_content, keys):
         "full_name": "Full name of the candidate",
         "email": "Candidate's email address (validate format)",
         "phone_number": "All valid phone numbers (exactly 10 digits after extracting country code, separated by commas, otherwise null)",
-        "country_code": "Country code(s) for extracted phone numbers (if applicable, otherwise null)",
+        "country_code": "Country code(s) for extracted phone numbers prefixed with + sign (if applicable, otherwise null)",
         "invalid_number": "List of phone numbers that are less or more than 10 digits after extracting country code, separated by commas (if any, otherwise null)"
     }}
 
