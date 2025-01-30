@@ -6,7 +6,7 @@ import { env } from "@/env.js";
 // TYPES
 import type internal from "stream";
 import type { Readable } from "stream";
-// CONSTANTS
+// CONSTANS
 import { STORAGE_BUCKETS } from "@/constants";
 
 export const isBucketNameValid = (
@@ -36,7 +36,7 @@ export const nodeStreamToWebReadable = (
 
 export const s3Client = new Minio.Client({
   endPoint: env.S3_ENDPOINT,
-  port: 9000,
+  port: env.S3_PORT,
   accessKey: env.S3_ACCESS_KEY,
   secretKey: env.S3_SECRET_KEY,
   useSSL: env.S3_USE_SSL,

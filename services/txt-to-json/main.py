@@ -3,10 +3,15 @@ import json
 import os
 import signal
 import aio_pika
-from config import APP_CONFIG, MINIO_CONFIG, QUEUES, RABBITMQ_CONFIG
+from config import APP_CONFIG, MINIO_BUCKETS,  QUEUES, RABBITMQ_CONFIG
 from utils import (
-        logger,
-    cleanup_files, initialize_redis, download_file, send_message_to_queue, extract_data, upload_json_file,
+    logger,
+    extract_data, 
+    cleanup_files, 
+    download_file, 
+    initialize_redis, 
+    upload_json_file,
+    send_message_to_queue, 
 )
 
 # Global shutdown event
@@ -39,7 +44,7 @@ async def process_message(message, keys):
             # Download file
             local_path = os.path.join(APP_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
             await download_file(
-                MINIO_CONFIG.BUCKETS.PROCESSED_TXT_FILES,
+                MINIO_BUCKETS.PROCESSED_TXT_FILES,
                 file_path,
                 local_path
             )
