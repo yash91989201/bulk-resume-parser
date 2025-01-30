@@ -3,7 +3,6 @@ import asyncio
 import signal
 import os
 from aio_pika.abc import AbstractIncomingMessage
-from dotenv import load_dotenv
 import hashlib
 from config import CONFIG, QUEUES
 from utils import (
@@ -16,8 +15,6 @@ from utils import (
         update_parsing_task, 
         upload_excel_file
 )
-
-load_dotenv()
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()

@@ -1,17 +1,13 @@
 import asyncio
 import json
-import logging
 import os
 import signal
 import aio_pika
-from dotenv import load_dotenv
 from config import APP_CONFIG, MINIO_CONFIG, QUEUES, RABBITMQ_CONFIG
 from utils import (
         logger,
     cleanup_files, initialize_redis, download_file, send_message_to_queue, extract_data, upload_json_file,
 )
-
-load_dotenv()
 
 # Global shutdown event
 shutdown_event = asyncio.Event()

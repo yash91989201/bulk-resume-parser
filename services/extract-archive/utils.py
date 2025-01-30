@@ -9,6 +9,7 @@ import patoolib
 import aiohttp
 import logging
 import mimetypes
+from minio.error import S3Error
 from enum import Enum
 from typing import Callable, List
 from minio import Minio
@@ -213,7 +214,7 @@ async def download_archive_files(user_id: str, task_id: str) -> List[str]:
         if obj.object_name is None:
             continue
 
-        archive_file_path = os.path.join(CONFIG.EXTRACTION_DIRECTORY, user_id, task_id, os.path.basename(obj.object_name))
+        archive_file_path = os.path.join(CONFIG.DOWNLOAD_DIRECTORY, user_id, task_id, os.path.basename(obj.object_name))
         minio_client.fget_object(MINIO_BUCKETS.ARCHIVE_FILES, obj.object_name, archive_file_path)
         archive_files_path.append(archive_file_path)
 
@@ -238,7 +239,6 @@ async def extract_archive_files(task_id:str, archive_files: List[str]) -> str:
         patoolib.extract_archive(archive_file_path,outdir= extraction_directory)
 
     return extraction_directory
-
 
 async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: str) -> tuple[int, int, List[ParseableFile]]:
     """
@@ -266,39 +266,46 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
             filename_in_bucket = f"{cuid2_generator()}-{file_name}"
             minio_object_path = os.path.join(user_id, task_id, folder_name, filename_in_bucket)
 
-            # Upload file to MinIO
-            minio_client.fput_object(MINIO_BUCKETS.PARSEABLE_FILES, minio_object_path, file_path)
+            try:
+                # Upload file to MinIO
+                minio_client.fput_object(MINIO_BUCKETS.PARSEABLE_FILES, minio_object_path, file_path)
 
-            if not is_file_ext_supported(file_extension):
-                invalid_files += 1
-                continue
+                if not is_file_ext_supported(file_extension):
+                    invalid_files += 1
+                    continue
 
-            total_files += 1
-            queue_name = get_queue_name_by_file_extension(file_extension)
+                total_files += 1
+                queue_name = get_queue_name_by_file_extension(file_extension)
 
-            queue_message = {
-                "userId": user_id,
-                "taskId": task_id,
-                "filePath": minio_object_path,
-            }
+                queue_message = {
+                    "userId": user_id,
+                    "taskId": task_id,
+                    "filePath": minio_object_path,
+                }
 
-            parseable_files.append(
-                ParseableFile(
-                    bucketName=MINIO_BUCKETS.PARSEABLE_FILES,
-                    fileName=filename_in_bucket,
-                    filePath=minio_object_path,
-                    originalName=file_name,
-                    contentType=get_content_type(file_name),
-                    size=os.path.getsize(file_path),
-                    status=FileStatus.PENDING,
-                    parsingTaskId=task_id,
+                parseable_files.append(
+                    ParseableFile(
+                        bucketName=MINIO_BUCKETS.PARSEABLE_FILES,
+                        fileName=filename_in_bucket,
+                        filePath=minio_object_path,
+                        originalName=file_name,
+                        contentType=get_content_type(file_name),
+                        size=os.path.getsize(file_path),
+                        status=FileStatus.PENDING,
+                        parsingTaskId=task_id,
+                    )
                 )
-            )
 
-            await send_message_to_queue(queue_name, queue_message)
+                await send_message_to_queue(queue_name, queue_message)
+
+            except S3Error as e:
+                invalid_files += 1
+                print(f"MinIO error occurred while uploading {file_name}: {e}")
+            except Exception as e:
+                invalid_files += 1
+                print(f"Unexpected error occurred while processing {file_name}: {e}")
 
     return total_files, invalid_files, parseable_files
-
 
 async def cleanup_extracted_files(file_paths: List[str]):
     """
@@ -306,7 +313,7 @@ async def cleanup_extracted_files(file_paths: List[str]):
     """
     for file_path in file_paths:
         try:
-            await asyncio.to_thread(os.remove, file_path)  # Run `os.remove` in a thread
+            await asyncio.to_thread(os.remove, file_path) 
             logger.info(f"Deleted temporary file: {file_path}")
         except FileNotFoundError:
             logger.warning(f"File not found: {file_path}")
@@ -316,13 +323,25 @@ async def cleanup_extracted_files(file_paths: List[str]):
             logger.error(f"Error deleting {file_path}: {e}")
 
 
-def cleanup_extraction_dir( extraction_directory: str):
+async def cleanup_extraction_dir(extraction_directory: str):
     """
-    Args:
-        extraction_directory: Path to the extraction directory.
-    """
-    shutil.rmtree(extraction_directory, ignore_errors=True)
+    Asynchronously removes the specified extraction directory.
 
+    Args:
+        extraction_directory (str): Path to the extraction directory.
+    """
+    if not os.path.exists(extraction_directory):
+        return  # Directory doesn't exist, nothing to clean up
+
+    try:
+        await asyncio.to_thread(shutil.rmtree, extraction_directory)
+        print(f"Successfully removed: {extraction_directory}")
+    except FileNotFoundError:
+        print(f"Directory not found: {extraction_directory}")
+    except PermissionError:
+        print(f"Permission denied: {extraction_directory}")
+    except OSError as e:
+        print(f"Error removing {extraction_directory}: {e}")
 
 def get_queue_name_by_file_extension(file_extension: str) -> str:
     """

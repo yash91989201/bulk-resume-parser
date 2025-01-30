@@ -2,7 +2,6 @@ import os
 import json
 import signal
 import asyncio
-from dotenv import load_dotenv
 from aio_pika.abc import AbstractIncomingMessage
 from config import  CONFIG, QUEUES
 from utils import (
@@ -16,8 +15,6 @@ from utils import (
     update_task_file_count,
     upload_by_file_type
 )
-
-load_dotenv()
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
@@ -60,7 +57,7 @@ async def process_message(message: AbstractIncomingMessage):
 
             # Step 5: Clean up temporary files
             await cleanup_extracted_files(archive_files)
-            cleanup_extraction_dir(extraction_directory)
+            await cleanup_extraction_dir(extraction_directory)
 
             logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
 

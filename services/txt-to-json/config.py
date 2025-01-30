@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class MINIO_CONFIG:
     ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")

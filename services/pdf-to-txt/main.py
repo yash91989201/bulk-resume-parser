@@ -3,7 +3,6 @@ import json
 import logging
 import asyncio
 import signal
-from dotenv import load_dotenv
 from aio_pika.abc import AbstractIncomingMessage
 from utils import (
         logger,
@@ -16,7 +15,6 @@ from utils import (
 )
 from config import CONFIG,  QUEUES
 
-load_dotenv()
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()

@@ -1,11 +1,15 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class CONFIG:
-    EXTRACTION_DIRECTORY = "/tmp/extracted"
+    DOWNLOAD_DIRECTORY = "/tmp/archive-files"
+    EXTRACTION_DIRECTORY = "/tmp/parseable-files"
 
 class MINIO_CONFIG:
-    ENDPOINT = os.getenv("S3_ENDPOINT","localhost:9000") 
     SECURE = os.getenv("S3_USE_SSL", "False").lower() == "true"
+    ENDPOINT = os.getenv("S3_ENDPOINT","localhost:9000") 
     ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
     SECRET_KEY = os.getenv("S3_SECRET_KEY")
 

@@ -3,7 +3,6 @@ import json
 import logging
 import asyncio
 import signal
-from dotenv import load_dotenv
 from config import CONFIG, QUEUES
 from utils import (
         logger, 
@@ -14,8 +13,6 @@ from utils import (
         send_message_to_queue, 
         upload_txt_file
 )
-
-load_dotenv()
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()

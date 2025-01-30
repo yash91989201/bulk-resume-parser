@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class CONFIG:
     DOWNLOAD_DIR = "/tmp/pdf-to-txt"
