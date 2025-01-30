@@ -7,7 +7,7 @@ from redis import asyncio as redis
 from google.generativeai import GenerativeModel, configure, GenerationConfig
 import aio_pika
 from minio import Minio
-from config import RABBITMQ_CONFIG, MINIO_CONFIG, APP_CONFIG
+from config import MINIO_BUCKETS, RABBITMQ_CONFIG, MINIO_CONFIG, APP_CONFIG
 import logging
 
 # Configure logging
@@ -145,7 +145,7 @@ async def upload_json_file(user_id: str, task_id: str, json_file_path: str) -> s
     """
     json_filename = os.path.basename(json_file_path)
     minio_object_path = os.path.join(user_id, task_id, json_filename)
-    minio_client.fput_object(MINIO_CONFIG.BUCKETS.PROCESSED_JSON_FILES, minio_object_path, json_file_path)
+    minio_client.fput_object(MINIO_BUCKETS.PROCESSED_JSON_FILES, minio_object_path, json_file_path)
     logger.info(f"Uploaded {json_file_path} to MinIO at {minio_object_path}")
     return minio_object_path
 

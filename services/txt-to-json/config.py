@@ -2,13 +2,13 @@ import os
 
 class MINIO_CONFIG:
     ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-    ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "85cBsFp5EOGhDLsPQkur")
-    SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "UaGUBdEj35JxvvFXpiuF2cWApLz7SLZ1pF89Ckza")
+    ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+    SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
     SECURE = os.getenv("MINIO_SECURE", "False").lower() == "true"
     
-    class BUCKETS:
-        PROCESSED_JSON_FILES = "processed-json-files"
-        PROCESSED_TXT_FILES = "processed-txt-files"
+class MINIO_BUCKETS:
+    PROCESSED_JSON_FILES = "processed-json-files"
+    PROCESSED_TXT_FILES = "processed-txt-files"
 
 
 class RABBITMQ_CONFIG:

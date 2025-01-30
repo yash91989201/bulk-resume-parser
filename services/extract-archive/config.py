@@ -6,11 +6,11 @@ class CONFIG:
 class MINIO_CONFIG:
     ENDPOINT = os.getenv("S3_ENDPOINT","localhost:9000") 
     SECURE = os.getenv("S3_USE_SSL", "False").lower() == "true"
-    ACCESS_KEY = os.getenv("S3_ACCESS_KEY","85cBsFp5EOGhDLsPQkur")
-    SECRET_KEY = os.getenv("S3_SECRET_KEY","UaGUBdEj35JxvvFXpiuF2cWApLz7SLZ1pF89Ckza")
+    ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
+    SECRET_KEY = os.getenv("S3_SECRET_KEY")
 
 class RABBITMQ_CONFIG:
-    URL = os.getenv("RABBITMQ_URL","aqmp://localhost:5672")
+    URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
 
 class QUEUES:
     EXTRACT_ARCHIVE = "extract_archive_queue"
