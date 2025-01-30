@@ -7,7 +7,7 @@ import aio_pika
 import subprocess
 from minio import Minio
 from docx import Document
-from config import CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
 
 # Logging Configuration
 logging.basicConfig(
@@ -40,7 +40,7 @@ async def download_doc_file(file_path: str) -> str:
     Returns:
         The local file path.
     """
-    local_file_path = os.path.join(CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+    local_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
     minio_client.fget_object(MINIO_BUCKETS.PARSEABLE_FILES, file_path, local_file_path)
     return local_file_path
 
@@ -58,7 +58,7 @@ async def extract_text_and_save(local_file_path: str, original_file_path: str) -
     """
     text_content = extract_text_from_docx(local_file_path)
     txt_filename = os.path.splitext(os.path.basename(original_file_path))[0] + ".txt"
-    local_txt_path = os.path.join(CONFIG.DOWNLOAD_DIR, txt_filename)
+    local_txt_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, txt_filename)
 
     with open(local_txt_path, "w", encoding="utf-8") as txt_file:
         txt_file.write(text_content)

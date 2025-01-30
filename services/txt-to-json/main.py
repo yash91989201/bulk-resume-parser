@@ -2,10 +2,9 @@ import asyncio
 import json
 import os
 import signal
-import aio_pika
-from config import APP_CONFIG, MINIO_BUCKETS,  QUEUES, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS,  QUEUES
 from utils import (
-    get_rabbit_mq_connection,
+    get_rabbitmq_connection,
     logger,
     extract_data, 
     cleanup_files, 
@@ -43,7 +42,7 @@ async def process_message(message, keys):
             logger.info(f"Processing task {task_id} for user {user_id}")
 
             # Download file
-            local_path = os.path.join(APP_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+            local_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
             await download_file(
                 MINIO_BUCKETS.PROCESSED_TXT_FILES,
                 file_path,
@@ -58,7 +57,7 @@ async def process_message(message, keys):
 
             # Construct upload path for JSON file
             json_file = f"{user_id}/{task_id}/{os.path.splitext(os.path.basename(file_path))[0]}.json"
-            json_path = os.path.join(APP_CONFIG.DOWNLOAD_DIR, os.path.basename(json_file))
+            json_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(json_file))
             
             # Write JSON content
             with open(json_path, "w") as f:
@@ -85,11 +84,11 @@ async def start_consumer(keys):
     """
     Start the RabbitMQ consumer.
     """
-    connection = await get_rabbit_mq_connection()
+    connection = await get_rabbitmq_connection()
 
     async with connection:
         channel = await connection.channel()
-        await channel.set_qos(prefetch_count=APP_CONFIG.CONCURRENCY)
+        await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY)
         
         queue = await channel.declare_queue(
             QUEUES.TXT_TO_JSON,
@@ -107,7 +106,7 @@ async def main():
     Main function to initialize and run the service.
     """
     # Initialize directories
-    os.makedirs(APP_CONFIG.DOWNLOAD_DIR, exist_ok=True)
+    os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
     
     # Initialize Redis
     _, keys = await initialize_redis()

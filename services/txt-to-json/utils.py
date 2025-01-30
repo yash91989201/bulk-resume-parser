@@ -7,7 +7,7 @@ from redis import asyncio as redis
 from google.generativeai import GenerativeModel, configure, GenerationConfig
 import aio_pika
 from minio import Minio
-from config import MINIO_BUCKETS, RABBITMQ_CONFIG, MINIO_CONFIG, APP_CONFIG
+from config import MINIO_BUCKETS, RABBITMQ_CONFIG, MINIO_CONFIG, SERVICE_CONFIG
 import logging
 
 # Configure logging
@@ -20,7 +20,7 @@ logger = logging.getLogger("rabbitmq_consumer")
 
 # Redis Client
 redis_client = redis.from_url(
-    APP_CONFIG.REDIS_URL,
+    SERVICE_CONFIG.REDIS_URL,
     decode_responses=True
 )
 
@@ -188,7 +188,7 @@ async def extract_data(text_content, keys):
     ```  
     """
     
-    for attempt in range(APP_CONFIG.MAX_RETRIES):
+    for attempt in range(SERVICE_CONFIG.MAX_RETRIES):
         api_key = await get_available_key(keys)
         if not api_key:
             logger.warning(f"Attempt {attempt + 1}: No available API keys. Retrying...")
@@ -216,7 +216,7 @@ async def extract_data(text_content, keys):
         except Exception as e:
             logger.error(f"Error processing with API Key {api_key}: {str(e)}")
             await mark_rate_limited(api_key)
-            if attempt == APP_CONFIG.MAX_RETRIES - 1:
+            if attempt == SERVICE_CONFIG.MAX_RETRIES - 1:
                 logger.error("Max retries reached. Raising exception.")
                 raise
             await asyncio.sleep(1)
@@ -258,16 +258,11 @@ async def cleanup_files(file_paths: List[str]):
         except Exception as e:
             logger.error(f"Error deleting {file_path}: {e}")
 
-async def get_rabbit_mq_connection():
+async def get_rabbitmq_connection():
     """
     Get a connection to RabbitMQ.
     """
-    connection = await aio_pika.connect_robust(
-        host=RABBITMQ_CONFIG.HOST,
-        port=RABBITMQ_CONFIG.PORT,
-        login=RABBITMQ_CONFIG.USERNAME,
-        password=RABBITMQ_CONFIG.PASSWORD
-    )
+    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
     logger.info("Connected to RabbitMQ")
     return connection
 
@@ -275,7 +270,7 @@ async def send_message_to_queue(queue_name: str, message: dict):
     """
     Send a message to a RabbitMQ queue.
     """
-    connection = await get_rabbit_mq_connection()
+    connection = await get_rabbitmq_connection()
     async with connection:
         channel = await connection.channel()
         await channel.default_exchange.publish(

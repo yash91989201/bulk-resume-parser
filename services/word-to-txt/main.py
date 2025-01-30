@@ -1,10 +1,8 @@
 import os
 import json
-import logging
 import asyncio
 import signal
 from aio_pika.abc import AbstractIncomingMessage
-from dotenv import load_dotenv
 from utils import (
     logger,
     cleanup_files,
@@ -15,9 +13,7 @@ from utils import (
     send_message_to_queue,
     upload_txt_file
 )
-from config import CONFIG,  QUEUES
-
-load_dotenv()
+from config import SERVICE_CONFIG,  QUEUES
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
@@ -152,7 +148,7 @@ async def main():
     """
     Main function to start the application.
     """
-    os.makedirs(CONFIG.DOWNLOAD_DIR, exist_ok=True)
+    os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
     await start_message_consumer()
 
 

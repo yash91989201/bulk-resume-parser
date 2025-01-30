@@ -4,23 +4,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class MINIO_CONFIG:
-    ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-    ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-    SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
-    SECURE = os.getenv("MINIO_SECURE", "False").lower() == "true"
+    ENDPOINT = os.getenv("S3_ENDPOINT", "localhost:9000")
+    ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
+    SECRET_KEY = os.getenv("S3_SECRET_KEY")
+    SECURE = os.getenv("S3_SECURE", "False").lower() == "true"
     
 class MINIO_BUCKETS:
     PROCESSED_JSON_FILES = "processed-json-files"
     PROCESSED_TXT_FILES = "processed-txt-files"
 
-
 class RABBITMQ_CONFIG:
-    HOST = os.getenv("RABBITMQ_HOST", "localhost")
-    PORT = int(os.getenv("RABBITMQ_PORT", 5672))
-    USERNAME = os.getenv("RABBITMQ_USER", "guest")
-    PASSWORD = os.getenv("RABBITMQ_PASS", "guest")
+    URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
 
-class APP_CONFIG:
+class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/json-files"
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
     CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
