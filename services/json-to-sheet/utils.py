@@ -1,9 +1,9 @@
+import asyncio
 import json
 import pandas as pd
 import logging
 import os
 import aio_pika
-import aiofiles.os
 from config import CONFIG, MINIO_BUCKETS
 from minio import Minio
 import aiohttp
@@ -149,15 +149,22 @@ async def upload_excel_file(  user_id: str, task_id: str, excel_file_path:str) -
     minio_client.fput_object(MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, excel_file_path)
     return minio_object_path
 
-async def cleanup_files(file_paths:List[str]):
+async def cleanup_files(file_paths: List[str]):
     """
-    Deletes temporary files.
-
-    Args:
-        file_paths: List of file paths to delete.
+    Delete temporary files asynchronously.
     """
     for file_path in file_paths:
-        await aiofiles.os.remove(file_path)
+        try:
+            await asyncio.to_thread(os.remove, file_path)  
+            logging.info(f"Deleted temporary file: {file_path}")
+        except FileNotFoundError:
+            logging.warning(f"File not found: {file_path}")
+        except PermissionError:
+            logging.error(f"Permission denied: {file_path}")
+        except Exception as e:
+            logging.error(f"Error deleting {file_path}: {e}")
+
+
 
 async def get_rabbit_mq_connection():
     connection = await aio_pika.connect_robust(

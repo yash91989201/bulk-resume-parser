@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import aiofiles.os
 from typing import List
 from datetime import datetime, timedelta
 from redis import asyncio as redis
@@ -238,13 +237,21 @@ def validate_response(response_text):
         logger.error("Invalid JSON response from Gemini")
         raise
 
+
 async def cleanup_files(file_paths: List[str]):
     """
-    Delete temporary files.
+    Delete temporary files asynchronously.
     """
     for file_path in file_paths:
-        await aiofiles.os.remove(file_path)
-        logger.info(f"Deleted temporary file: {file_path}")
+        try:
+            await asyncio.to_thread(os.remove, file_path)  # Run `os.remove` in a thread
+            logger.info(f"Deleted temporary file: {file_path}")
+        except FileNotFoundError:
+            logger.warning(f"File not found: {file_path}")
+        except PermissionError:
+            logger.error(f"Permission denied: {file_path}")
+        except Exception as e:
+            logger.error(f"Error deleting {file_path}: {e}")
 
 async def get_rabbit_mq_connection():
     """

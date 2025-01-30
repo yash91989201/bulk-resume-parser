@@ -1,7 +1,7 @@
+import asyncio
 import json
 import logging
 import os
-import aiofiles.os
 import shutil
 import aio_pika
 from cuid2 import cuid_wrapper
@@ -291,14 +291,21 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
     return total_files, invalid_files, parseable_files
 
 
-async def cleanup_extracted_files(local_files: List[str]):
+async def cleanup_extracted_files(file_paths: List[str]):
     """
-    Args:
-        local_files: List of local file paths.
-        extraction_directory: Path to the extraction directory.
+    Delete temporary files asynchronously.
     """
-    for local_file_path in local_files:
-        await aiofiles.os.remove(local_file_path)
+    for file_path in file_paths:
+        try:
+            await asyncio.to_thread(os.remove, file_path)  # Run `os.remove` in a thread
+            logging.info(f"Deleted temporary file: {file_path}")
+        except FileNotFoundError:
+            logging.warning(f"File not found: {file_path}")
+        except PermissionError:
+            logging.error(f"Permission denied: {file_path}")
+        except Exception as e:
+            logging.error(f"Error deleting {file_path}: {e}")
+
 
 def cleanup_extraction_dir( extraction_directory: str):
     """

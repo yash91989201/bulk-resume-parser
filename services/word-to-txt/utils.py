@@ -1,7 +1,8 @@
+import asyncio
+import logging
 import json
 import os
 from typing import List
-import aiofiles.os
 import aio_pika
 import subprocess
 from minio import Minio
@@ -72,16 +73,21 @@ async def upload_txt_file(local_txt_path: str, user_id: str, task_id: str) -> st
     minio_client.fput_object(MINIO_BUCKETS.PROCESSED_TXT_FILES, minio_object_path, local_txt_path)
     return minio_object_path
 
-async def cleanup_files(file_paths:List[str]):
-    """
-    Deletes temporary files.
 
-    Args:
-        file_paths: List of file paths to delete.
+async def cleanup_files(file_paths: List[str]):
+    """
+    Delete temporary files asynchronously.
     """
     for file_path in file_paths:
-        await aiofiles.os.remove(file_path)
-
+        try:
+            await asyncio.to_thread(os.remove, file_path)  
+            logging.info(f"Deleted temporary file: {file_path}")
+        except FileNotFoundError:
+            logging.warning(f"File not found: {file_path}")
+        except PermissionError:
+            logging.error(f"Permission denied: {file_path}")
+        except Exception as e:
+            logging.error(f"Error deleting {file_path}: {e}")
 
 
 def convert_doc_to_docx(local_file_path: str) -> str:
