@@ -12,6 +12,14 @@ from config import CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
 
 pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
+# Logging Configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger("rabbitmq_consumer")
+
+
 minio_client = Minio(
     endpoint= MINIO_CONFIG.ENDPOINT,
     access_key=MINIO_CONFIG.ACCESS_KEY,

@@ -14,6 +14,17 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import List, Optional
 
+
+# Logging Configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+logger = logging.getLogger("rabbitmq_consumer")
+
+
+
 class TaskStatus(Enum):
     CREATED = "created"
     EXTRACTING = "extracting"

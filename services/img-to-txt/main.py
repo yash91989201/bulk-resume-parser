@@ -3,8 +3,10 @@ import json
 import logging
 import asyncio
 import signal
+from dotenv import load_dotenv
 from config import CONFIG, QUEUES
 from utils import (
+        logger, 
         cleanup_files, 
         download_img_file, 
         extract_img_to_txt_file, 
@@ -13,12 +15,7 @@ from utils import (
         upload_txt_file
 )
 
-# Logging Configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger("rabbitmq_consumer")
+load_dotenv()
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()

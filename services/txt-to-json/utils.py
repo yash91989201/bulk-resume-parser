@@ -11,6 +11,11 @@ from config import RABBITMQ_CONFIG, MINIO_CONFIG, APP_CONFIG
 import logging
 
 # Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
 logger = logging.getLogger("rabbitmq_consumer")
 
 # Redis Client

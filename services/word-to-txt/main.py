@@ -4,7 +4,9 @@ import logging
 import asyncio
 import signal
 from aio_pika.abc import AbstractIncomingMessage
+from dotenv import load_dotenv
 from utils import (
+    logger,
     cleanup_files,
     convert_doc_to_docx,
     download_doc_file,
@@ -15,13 +17,7 @@ from utils import (
 )
 from config import CONFIG,  QUEUES
 
-
-# Logging Configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger("rabbitmq_consumer")
+load_dotenv()
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
