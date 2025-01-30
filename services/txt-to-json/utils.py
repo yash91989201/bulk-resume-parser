@@ -25,7 +25,7 @@ async def initialize_redis():
     Initialize Redis with API keys from environment variables.
     """
     # Fetch keys from environment variables
-    api_keys = os.getenv("GEMINI_API_KEYS", "AIzaSyBvJ23TZ3TrgwuJJgekaJfHFW1zhhOIZls,AIzaSyAgpk1ESXq8kxNJLBQVK6ZEJM1StmNx0rY,AIzaSyDl4iINoZWQlqqezkFxkZfZSAO8PKOOluI").split(",")  # Expecting a comma-separated list of keys
+    api_keys = os.getenv("GEMINI_API_KEYS","").split(",")  # Expecting a comma-separated list of keys
     api_keys = [key.strip() for key in api_keys if key.strip()]  # Clean up and remove empty keys
 
     for api_key in api_keys:
@@ -77,7 +77,7 @@ async def get_available_key(keys):
             1, f"gemini:keys:{api_key}"
         )
         if success:
-            logger.info(f"Using API Key {api_key} for processing.")
+            logger.info(f"Using API Key {api_key} for processing. Key info: {key_data}")
             return api_key
     logger.warning("No available API keys found.")
     return None
