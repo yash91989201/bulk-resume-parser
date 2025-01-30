@@ -3,7 +3,7 @@ import json
 import signal
 import asyncio
 from aio_pika.abc import AbstractIncomingMessage
-from config import  CONFIG, QUEUES
+from config import  SERVICE_CONFIG, QUEUES
 from utils import (
     logger,
     cleanup_files,
@@ -36,29 +36,31 @@ async def process_message(message: AbstractIncomingMessage):
             task_id = data.get("taskId")
 
             if not user_id or not task_id:
-                raise ValueError("Missing 'userId' or 'taskId' in the message.")
+                raise ValueError("Missing 'userId' or 'taskId' in the queue message.")
 
             logger.info(f"Task {task_id}: Starting extraction")
 
-            # Step 1: List and download all files from MinIO
+            # Step 1: Download all archive files in task 
             archive_files = await download_archive_files(user_id, task_id)
 
-            # Step 2: Extract all archive files
+            # Step 2: Extract contents of archive files 
             extraction_directory = await extract_archive_files(task_id, archive_files)
 
-            # Step 3: Process extracted files
+            # Step 3: Upload extracted files to minio by extension type 
             total_files, invalid_files, parseable_files = await upload_by_file_type(
                 extraction_directory, user_id, task_id
             )
 
-            # Step 4: Update task and insert parseable files info
+            # Step 4: Update task file count in db 
             await update_task_file_count(task_id, total_files, invalid_files)
-            await insert_parseable_files(task_id, parseable_files)
 
-            # Step 5: Clean up temporary files
+            # Step 5: Insert parseable files in db
+            await insert_parseable_files(parseable_files)
+
+            # Step 6: Clean up temporary files
             await cleanup_files(archive_files)
             await cleanup_dir(extraction_directory)
-            await cleanup_dir(os.path.join(CONFIG.DOWNLOAD_DIRECTORY,user_id, task_id))
+            await cleanup_dir(os.path.join(SERVICE_CONFIG.DOWNLOAD_DIRECTORY,user_id, task_id))
 
             logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
 
@@ -99,14 +101,14 @@ async def start_message_consumer():
                 channel = await connection.channel()
 
                 # Set QoS to allow multiple unacknowledged messages
-                await channel.set_qos(prefetch_count=10)  # Allow up to 10 concurrent messages
+                await channel.set_qos(prefetch_count= SERVICE_CONFIG.CONCURRENCY)  # Allow up to 10 concurrent messages
 
                 # Declare the queue
                 queue = await channel.declare_queue(QUEUES.EXTRACT_ARCHIVE, durable=True)
 
                 # Task queue and worker pool
-                task_queue = asyncio.Queue(maxsize=10)  # Limit to 10 concurrent tasks
-                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(10)]  # 10 workers
+                task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE)  # Limit concurrent tasks
+                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(SERVICE_CONFIG.WORKER_COUNT)]  # worker count 
 
                 async def enqueue_message(message):
                     await task_queue.put(message)
@@ -115,9 +117,8 @@ async def start_message_consumer():
                 await queue.consume(enqueue_message)
 
                 logger.info("Waiting for messages...")
-                await shutdown_event.wait()  # Wait for shutdown signal
+                await shutdown_event.wait()
 
-                # Graceful shutdown: Wait for all tasks to complete
                 logger.info("Shutting down workers...")
                 await task_queue.join()
 
@@ -141,7 +142,8 @@ async def graceful_shutdown(signal):
         signal: The signal received.
     """
     logger.info(f"Received {signal.name}. Initiating shutdown...")
-    shutdown_event.set()  # Signal all components to stop
+    # Signal all components to stop
+    shutdown_event.set()  
     logger.info("Application is shutting down. Waiting for tasks to finish...")
 
 
@@ -149,7 +151,7 @@ async def main():
     """
     Main function to start the application.
     """
-    os.makedirs(CONFIG.EXTRACTION_DIRECTORY, exist_ok=True)
+    os.makedirs(SERVICE_CONFIG.EXTRACTION_DIRECTORY, exist_ok=True)
     await start_message_consumer()
 
 
@@ -163,7 +165,7 @@ if __name__ == "__main__":
                 sig, lambda s=sig: asyncio.create_task(graceful_shutdown(s))
             )
 
-        logger.info("Service: extract-archive")
+        logger.info("Starting extract-archive service.")
         logger.info("Starting RabbitMQ consumer...")
         loop.run_until_complete(main())
 

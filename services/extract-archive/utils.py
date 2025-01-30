@@ -13,7 +13,7 @@ from minio.error import S3Error
 from enum import Enum
 from typing import Callable, List
 from minio import Minio
-from config import CONFIG, MINIO_BUCKETS, MINIO_CONFIG, QUEUES, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, QUEUES, RABBITMQ_CONFIG
 from dataclasses import dataclass
 
 # Logging Configuration
@@ -137,7 +137,7 @@ async def update_task_file_count(
         logger.error(f"Task {task_id}: Unexpected error updating counts: {str(e)}")
         return False
 
-async def insert_parseable_files(taskId: str, parseableFiles:List[ParseableFile]) ->bool :
+async def insert_parseable_files(parseableFiles:List[ParseableFile]) ->bool :
     """
     Insert parseable files record to db vis Next.js API
     Returns True if successful, False otherwise
@@ -214,7 +214,7 @@ async def download_archive_files(user_id: str, task_id: str) -> List[str]:
         if obj.object_name is None:
             continue
 
-        archive_file_path = os.path.join(CONFIG.DOWNLOAD_DIRECTORY, user_id, task_id, os.path.basename(obj.object_name))
+        archive_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIRECTORY, user_id, task_id, os.path.basename(obj.object_name))
         minio_client.fget_object(MINIO_BUCKETS.ARCHIVE_FILES, obj.object_name, archive_file_path)
         archive_files_path.append(archive_file_path)
 
@@ -232,7 +232,7 @@ async def extract_archive_files(task_id:str, archive_files: List[str]) -> str:
     Returns:
         Path to the extraction directory.
     """
-    extraction_directory = os.path.join(CONFIG.EXTRACTION_DIRECTORY, f"extracted-{task_id}")
+    extraction_directory = os.path.join(SERVICE_CONFIG.EXTRACTION_DIRECTORY, f"extracted-{task_id}")
     os.makedirs(extraction_directory, exist_ok=True)
 
     for archive_file_path in archive_files:
