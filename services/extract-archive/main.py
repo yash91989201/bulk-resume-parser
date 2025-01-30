@@ -6,8 +6,8 @@ from aio_pika.abc import AbstractIncomingMessage
 from config import  CONFIG, QUEUES
 from utils import (
     logger,
-    cleanup_extracted_files,
-    cleanup_extraction_dir,
+    cleanup_files,
+    cleanup_dir,
     download_archive_files,
     extract_archive_files,
     insert_parseable_files,
@@ -56,8 +56,9 @@ async def process_message(message: AbstractIncomingMessage):
             await insert_parseable_files(task_id, parseable_files)
 
             # Step 5: Clean up temporary files
-            await cleanup_extracted_files(archive_files)
-            await cleanup_extraction_dir(extraction_directory)
+            await cleanup_files(archive_files)
+            await cleanup_dir(extraction_directory)
+            await cleanup_dir(os.path.join(CONFIG.DOWNLOAD_DIRECTORY,user_id, task_id))
 
             logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
 

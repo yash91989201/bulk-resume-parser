@@ -232,7 +232,7 @@ async def extract_archive_files(task_id:str, archive_files: List[str]) -> str:
     Returns:
         Path to the extraction directory.
     """
-    extraction_directory = os.path.join(CONFIG.EXTRACTION_DIRECTORY, f"extracted_{task_id}")
+    extraction_directory = os.path.join(CONFIG.EXTRACTION_DIRECTORY, f"extracted-{task_id}")
     os.makedirs(extraction_directory, exist_ok=True)
 
     for archive_file_path in archive_files:
@@ -307,7 +307,7 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
 
     return total_files, invalid_files, parseable_files
 
-async def cleanup_extracted_files(file_paths: List[str]):
+async def cleanup_files(file_paths: List[str]):
     """
     Delete temporary files asynchronously.
     """
@@ -323,7 +323,7 @@ async def cleanup_extracted_files(file_paths: List[str]):
             logger.error(f"Error deleting {file_path}: {e}")
 
 
-async def cleanup_extraction_dir(extraction_directory: str):
+async def cleanup_dir(extraction_directory: str):
     """
     Asynchronously removes the specified extraction directory.
 
