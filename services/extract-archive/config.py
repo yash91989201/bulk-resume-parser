@@ -6,7 +6,7 @@ load_dotenv()
 class SERVICE_CONFIG:
     QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",10))
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
-    WORKER_COUNT = int(os.getenv("MAX_RETRIES", 3))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 3))
     CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
     DOWNLOAD_DIRECTORY = "/tmp/archive-files"
     EXTRACTION_DIRECTORY = "/tmp/parseable-files"
