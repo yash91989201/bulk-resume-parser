@@ -26,8 +26,8 @@ redis_client = redis.from_url(
     decode_responses=True
 )
 
-_key_list:List[str] = []
-_key_timestamp:float = 0.0
+_key_list: List[str] = []
+_key_timestamp: float = 0.0
 
 # Minio Client
 minio_client = Minio(
