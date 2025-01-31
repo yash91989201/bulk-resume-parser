@@ -37,7 +37,7 @@ minio_client = Minio(
     secure=MINIO_CONFIG.SECURE
 )
 
-async def initialize_redis():
+async def init_api_keys():
     api_keys = os.getenv("GEMINI_API_KEYS", "").split(",")
     api_keys = [key.strip() for key in api_keys if key.strip()]
     
@@ -48,23 +48,18 @@ async def initialize_redis():
     # Initialize individual key data
     for api_key in api_keys:
         if not await redis_client.exists(f"gemini:keys:{api_key}"):
-            await init_key(api_key)
+            await redis_client.hset(f"gemini:keys:{api_key}", mapping={
+                "minute_count": "0",
+                "daily_count": "0",
+                "minute_window_start": "0",
+                "daily_window_start": "0",
+                "is_rate_limited": "false",
+                "cooldown_until": ""
+            })
+            
+            logger.info(f"Initialized API key: {api_key}")
     
     logger.info(f"Initialized Redis with {len(api_keys)} API keys.")
-
-async def init_key(api_key):
-    """
-    Initialize a new API key in Redis.
-    """
-    await redis_client.hset(f"gemini:keys:{api_key}", mapping={
-        "minute_count": "0",
-        "daily_count": "0",
-        "minute_window_start": "0",
-        "daily_window_start": "0",
-        "is_rate_limited": "false",
-        "cooldown_until": ""
-    })
-    logger.info(f"Initialized API key: {api_key}")
 
 async def get_available_key():
     """

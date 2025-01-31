@@ -10,7 +10,7 @@ from utils import (
     extract_data, 
     cleanup_files, 
     download_file, 
-    initialize_redis, 
+    init_api_keys, 
     upload_json_file,
     send_message_to_queue, 
 )
@@ -146,7 +146,7 @@ async def main():
     os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
     
     # Initialize Redis
-    await initialize_redis()
+    await init_api_keys()
     
     # Start consumer
     await start_message_consumer()

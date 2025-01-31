@@ -6,11 +6,11 @@ load_dotenv()
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/json-to-sheet"
     # no of workers spawned to process message from rabbit mq
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",15))
     # size of the local task queue
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",10))
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",15))
     # no of messages to fetch from rabbitmq queue 
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 15))
 
 
 class RABBITMQ_CONFIG:
