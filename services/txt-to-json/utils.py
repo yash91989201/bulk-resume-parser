@@ -68,7 +68,7 @@ async def init_key(api_key):
 
 async def get_available_key():
     """
-    Get an available API key directly from Redis
+    Get an available API key directly from Redis and print its stats
     """
     keys = await get_redis_keys()
     if not keys:
@@ -133,11 +133,15 @@ async def get_available_key():
             )
 
             if success:
+                # Fetch and print the stats of the selected API key
+                stats = await redis_client.hgetall(f"gemini:keys:{api_key}")
+                logger.info(f"Selected API Key: {api_key}")
+                logger.info(f"Stats: {stats}")
                 return api_key
 
         except Exception as e:
             logger.error(f"Error checking key {api_key}: {str(e)}")
-    
+
     logger.warning("No available API keys found")
     return None
 
