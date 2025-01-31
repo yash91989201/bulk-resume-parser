@@ -23,6 +23,7 @@ export const userTable = mysqlTable("user", {
   updatedAt: timestamp("updated_at").notNull(),
 });
 
+// TODO: use only created/extracting/processing/completed/failed as status
 export const parsingTaskTable = mysqlTable("parsing_task", {
   id: varchar("id", { length: 36 }).primaryKey().$defaultFn(createId),
   taskName: varchar("task_name", { length: 128 }).notNull(),

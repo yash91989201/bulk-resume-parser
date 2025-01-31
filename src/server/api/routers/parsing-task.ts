@@ -3,13 +3,13 @@ import { publishToQueue } from "@/server/utils";
 import { parsingTaskTable } from "@/server/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 // SCHEMAS
-import { ParsingTaskInsertSchema, StartParsingInput } from "@/lib/schema";
+import { CreateParsingTaskInput, StartParsingInput } from "@/lib/schema";
 // CONSTANTS
 import { QUEUES } from "@/constants";
 
 export const parsingTaskRouter = createTRPCRouter({
   create: protectedProcedure
-    .input(ParsingTaskInsertSchema.pick({ taskName: true }))
+    .input(CreateParsingTaskInput)
     .mutation(
       async ({
         ctx,
@@ -21,6 +21,7 @@ export const parsingTaskRouter = createTRPCRouter({
             .values({
               userId: ctx.session.user.id,
               taskName: input.taskName,
+              totalFiles: input.totalFiles,
             })
             .$returningId();
 

@@ -7,6 +7,33 @@ import { parseableFileTable } from "@/server/db/schema";
 import { ParseableFilesInsertSchema } from "@/lib/schema";
 // TYPES
 import type { NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
+
+export const GET = async (req: NextRequest) => {
+  try {
+    const taskId = req.nextUrl.searchParams.get("taskId");
+
+    if (taskId === null) throw new Error("taskId is required in query params");
+
+    const parseableFiles = await db.query.parseableFileTable.findMany({
+      where: eq(parseableFileTable.parsingTaskId, taskId),
+    });
+
+    return NextResponse.json({ status: "SUCCESS", data: { parseableFiles } });
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { status: "FAILED", message: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(
+      { status: "FAILED", message: "Unknown error occurred" },
+      { status: 500 },
+    );
+  }
+};
 
 export const POST = async (req: NextRequest) => {
   try {

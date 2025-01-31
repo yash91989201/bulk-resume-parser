@@ -5,12 +5,13 @@ import { createId } from "@paralleldrive/cuid2";
 import { auth } from "@/server/utils/auth";
 import { getBucketFilePrefix } from "@/lib/utils";
 import { createPresignedUrlToUpload, isBucketNameValid } from "@/server/utils";
+// SCHEMAS
+import { CreatePresignedUrlApiInput } from "@/lib/schema";
 // TYPES
 import type { NextRequest } from "next/server";
+import type { BucketFileInfoType } from "@/lib/types";
 // CONSTANTS
 import { ACCEPTED_FILE_TYPES } from "@/constants";
-import { BucketFileInfoType, FileMetadataType } from "@/lib/types";
-import { CreatePresignedUrlApiInput } from "@/lib/schema";
 
 const expiry = 60 * 60; // 24 hours
 

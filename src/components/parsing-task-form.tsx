@@ -63,13 +63,6 @@ export const ParsingTaskForm = () => {
     try {
       const { taskName, taskFilesState } = formData;
 
-      const createParsingTaskRes = await createParsingTask({ taskName });
-      if (createParsingTaskRes.status === "FAILED") {
-        throw new Error(createParsingTaskRes.message);
-      }
-
-      const taskId = createParsingTaskRes.data.taskId;
-
       const filesMetadata = taskFilesState.map(({ file }) => ({
         originalName: file.name,
         contentType: file.type,
@@ -79,6 +72,17 @@ export const ParsingTaskForm = () => {
       const allArchiveFiles = filesMetadata.every((file) =>
         ACCEPTED_FILE_TYPES.ARCHIVE_FILES.includes(file.contentType),
       );
+
+      const createParsingTaskRes = await createParsingTask({
+        taskName,
+        totalFiles: allArchiveFiles ? undefined : taskFilesState.length,
+      });
+
+      if (createParsingTaskRes.status === "FAILED") {
+        throw new Error(createParsingTaskRes.message);
+      }
+
+      const taskId = createParsingTaskRes.data.taskId;
 
       const bucketFilesInfo = await getBucketFilesInfo({
         taskId,

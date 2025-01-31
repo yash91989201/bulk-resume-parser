@@ -75,6 +75,11 @@ export const CreatePresignedUrlApiInput = z.object({
   filesMetadata: z.array(FileMetadataSchema),
 });
 
+export const CreateParsingTaskInput = z.object({
+  taskName: z.string(),
+  totalFiles: z.number().optional(),
+});
+
 // AUTH SCHEMAS
 export const LoginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
