@@ -1,0 +1,4 @@
+aio-pika==9.5.4
+minio==7.2.15
+python-dotenv==1.0.1
+aiohttp==3.11.11
