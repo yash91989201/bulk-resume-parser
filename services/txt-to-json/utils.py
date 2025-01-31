@@ -2,8 +2,9 @@ import asyncio
 import json
 import os
 import random
-from typing import List
+from typing import List, Set
 from datetime import datetime
+import time
 from redis import asyncio as redis
 from google.generativeai import GenerativeModel, configure, GenerationConfig
 import aio_pika
@@ -25,21 +26,31 @@ redis_client = redis.from_url(
     decode_responses=True
 )
 
-# Redis Key Manager
-async def initialize_redis():
-    """
-    Initialize Redis with API keys from environment variables.
-    """
-    # Fetch keys from environment variables
-    api_keys = os.getenv("GEMINI_API_KEYS","").split(",")  # Expecting a comma-separated list of keys
-    api_keys = [key.strip() for key in api_keys if key.strip()]  # Clean up and remove empty keys
+_key_list:List[str] = []
+_key_timestamp:float = 0.0
 
+# Minio Client
+minio_client = Minio(
+    MINIO_CONFIG.ENDPOINT,
+    access_key=MINIO_CONFIG.ACCESS_KEY,
+    secret_key=MINIO_CONFIG.SECRET_KEY,
+    secure=MINIO_CONFIG.SECURE
+)
+
+async def initialize_redis():
+    api_keys = os.getenv("GEMINI_API_KEYS", "").split(",")
+    api_keys = [key.strip() for key in api_keys if key.strip()]
+    
+    # Store keys in a Redis set
+    if api_keys:
+        await redis_client.sadd("gemini:keys:index", *api_keys)
+    
+    # Initialize individual key data
     for api_key in api_keys:
         if not await redis_client.exists(f"gemini:keys:{api_key}"):
             await init_key(api_key)
-
+    
     logger.info(f"Initialized Redis with {len(api_keys)} API keys.")
-    return redis_client, api_keys
 
 async def init_key(api_key):
     """
@@ -55,60 +66,107 @@ async def init_key(api_key):
     })
     logger.info(f"Initialized API key: {api_key}")
 
-async def get_available_key(keys:str):
-    shuffled_keys = random.sample(keys, len(keys))
+async def get_available_key():
+    """
+    Get an available API key directly from Redis
+    """
+    keys = await get_redis_keys()
+    if not keys:
+        logger.warning("No API keys found in Redis")
+        return None
+
     now = datetime.now().timestamp()
+    shuffled_keys = random.sample(keys, len(keys))
 
     for api_key in shuffled_keys:
-        # Evaluate Lua script atomically
-        success = await redis_client.eval(
-            """
-            local key = KEYS[1]
-            local now = tonumber(ARGV[1])
-            
-            -- Check cooldown
-            local cooldown_until = tonumber(redis.call('HGET', key, 'cooldown_until') or '0')
-            if cooldown_until > now then
-                return 0
-            end
-            
-            -- Reset windows if expired
-            local daily_start = tonumber(redis.call('HGET', key, 'daily_window_start') or '0')
-            if (now - daily_start) >= 86400 then
-                redis.call('HMSET', key, 'daily_count', 0, 'daily_window_start', now)
-            end
-            local minute_start = tonumber(redis.call('HGET', key, 'minute_window_start') or '0')
-            if (now - minute_start) >= 60 then
-                redis.call('HMSET', key, 'minute_count', 0, 'minute_window_start', now)
-            end
-            
-            -- Check limits and increment
-            local minute_count = tonumber(redis.call('HGET', key, 'minute_count') or '0')
-            local daily_count = tonumber(redis.call('HGET', key, 'daily_count') or '0')
-            if minute_count < 15 and daily_count < 1500 then
-                redis.call('HINCRBY', key, 'minute_count', 1)
-                redis.call('HINCRBY', key, 'daily_count', 1)
-                return 1
-            end
-            return 0
-            """,
-            1,
-            f"gemini:keys:{api_key}",
-            str(now)
-        )
+        try:
+            success = await redis_client.eval(
+                """
+                local key = KEYS[1]
+                local now = tonumber(ARGV[1])
 
-        if success:
-            logger.info(f"Using API Key {api_key}")
-            return api_key
+                -- Ensure the hash exists and initialize default values if not
+                if redis.call('EXISTS', key) == 0 then
+                    redis.call('HMSET', key, 
+                        'cooldown_until', 0,
+                        'daily_window_start', now,
+                        'minute_window_start', now,
+                        'daily_count', 0,
+                        'minute_count', 0
+                    )
+                end
+
+                -- Fetch values from Redis (with defaults)
+                local cooldown_until = tonumber(redis.call('HGET', key, 'cooldown_until') or 0)
+                local daily_window_start = tonumber(redis.call('HGET', key, 'daily_window_start') or now)
+                local minute_window_start = tonumber(redis.call('HGET', key, 'minute_window_start') or now)
+                local daily_count = tonumber(redis.call('HGET', key, 'daily_count') or 0)
+                local minute_count = tonumber(redis.call('HGET', key, 'minute_count') or 0)
+
+                -- Check cooldown
+                if cooldown_until > now then
+                    return 0
+                end
+
+                -- Reset windows if expired
+                if (now - daily_window_start) >= 86400 then
+                    redis.call('HMSET', key, 'daily_count', 0, 'daily_window_start', now)
+                    daily_count = 0
+                end
+                if (now - minute_window_start) >= 60 then
+                    redis.call('HMSET', key, 'minute_count', 0, 'minute_window_start', now)
+                    minute_count = 0
+                end
+
+                -- Check limits and increment
+                if minute_count < 15 and daily_count < 1500 then
+                    redis.call('HINCRBY', key, 'minute_count', 1)
+                    redis.call('HINCRBY', key, 'daily_count', 1)
+                    return 1
+                end
+
+                return 0
+                """, 
+                1,  # Number of keys
+                f"gemini:keys:{api_key}",
+                str(now)
+            )
+
+            if success:
+                return api_key
+
+        except Exception as e:
+            logger.error(f"Error checking key {api_key}: {str(e)}")
+    
+    logger.warning("No available API keys found")
     return None
 
-# Minio Client
-minio_client = Minio(
-    MINIO_CONFIG.ENDPOINT,
-    access_key=MINIO_CONFIG.ACCESS_KEY,
-    secret_key=MINIO_CONFIG.SECRET_KEY,
-    secure=MINIO_CONFIG.SECURE
-)
+async def get_redis_keys() -> List[str]:
+    """
+    Retrieve API keys from Redis with type annotations
+    Returns:
+        List[str]: List of API keys (empty list if error)
+    """
+    global _key_list
+    global _key_timestamp
+
+    current_time = time.time()
+    
+    if current_time - _key_timestamp < 5:
+        return _key_list 
+    
+    try:
+        # Fetch keys from Redis and convert set to list
+        keys: Set[str] = await redis_client.smembers("gemini:keys:index")
+        fresh_keys = list(keys)
+        
+        _key_list = fresh_keys
+        _key_timestamp = current_time
+        return fresh_keys
+        
+    except Exception as e:
+        logger.error(f"Error fetching keys: {str(e)}")
+        return _key_list
 
 async def download_file(bucket, object_name, file_path):
     """
@@ -134,7 +192,7 @@ async def upload_json_file(user_id: str, task_id: str, json_file_path: str) -> s
     logger.info(f"Uploaded {json_file_path} to MinIO at {minio_object_path}")
     return minio_object_path
 
-async def extract_data(text_content, keys):
+async def extract_data(text_content:str ):
     """
     Extract data from text using the Gemini API.
     """
@@ -171,9 +229,9 @@ async def extract_data(text_content, keys):
     {text_content}  
     ```  
     """
-    
+   
     for attempt in range(SERVICE_CONFIG.MAX_RETRIES):
-        api_key = await get_available_key(keys)
+        api_key = await get_available_key()
         if not api_key:
             logger.warning(f"Attempt {attempt + 1}: No available API keys. Retrying...")
             await asyncio.sleep(2 ** attempt)
@@ -199,7 +257,6 @@ async def extract_data(text_content, keys):
             
         except Exception as e:
             logger.error(f"Error processing with API Key {api_key}: {str(e)}")
-            await mark_rate_limited(api_key)
             if attempt == SERVICE_CONFIG.MAX_RETRIES - 1:
                 logger.error("Max retries reached. Raising exception.")
                 raise
