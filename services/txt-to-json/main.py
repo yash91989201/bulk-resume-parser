@@ -28,57 +28,58 @@ async def shutdown(signal):
     [task.cancel() for task in tasks]
     logger.info("Cancelled pending tasks")
 
-async def process_message(message, keys):
+async def process_message(message, keys, semaphore):
     """
     Process a message from RabbitMQ.
     """
-    async with message.process():
-        try:
-            msg_data = json.loads(message.body)
-            user_id = msg_data["userId"]
-            task_id = msg_data["taskId"]
-            file_path = msg_data["filePath"]
+    async with semaphore:
+        async with message.process():
+            try:
+                msg_data = json.loads(message.body)
+                user_id = msg_data["userId"]
+                task_id = msg_data["taskId"]
+                file_path = msg_data["filePath"]
 
-            logger.info(f"Processing task {task_id} for user {user_id}")
+                logger.info(f"Processing task {task_id} for user {user_id}")
 
-            # Download file
-            local_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
-            await download_file(
-                MINIO_BUCKETS.PROCESSED_TXT_FILES,
-                file_path,
-                local_path
-            )
+                # Download file
+                local_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+                await download_file(
+                    MINIO_BUCKETS.PROCESSED_TXT_FILES,
+                    file_path,
+                    local_path
+                )
 
-            # Process content
-            with open(local_path, "r") as f:
-                content = f.read()
+                # Process content
+                with open(local_path, "r") as f:
+                    content = f.read()
 
-            extracted_data = await extract_data(content, keys)
+                extracted_data = await extract_data(content, keys)
 
-            # Construct upload path for JSON file
-            json_file = f"{user_id}/{task_id}/{os.path.splitext(os.path.basename(file_path))[0]}.json"
-            json_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(json_file))
-            
-            # Write JSON content
-            with open(json_path, "w") as f:
-                json.dump(extracted_data, f)
+                # Construct upload path for JSON file
+                json_file = f"{user_id}/{task_id}/{os.path.splitext(os.path.basename(file_path))[0]}.json"
+                json_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(json_file))
+                
+                # Write JSON content
+                with open(json_path, "w") as f:
+                    json.dump(extracted_data, f)
 
-            # Upload result
-            minio_object_path = await upload_json_file(user_id, task_id, json_file_path=json_path)
+                # Upload result
+                minio_object_path = await upload_json_file(user_id, task_id, json_file_path=json_path)
 
-            await send_message_to_queue(queue_name=QUEUES.JSON_TO_SHEET, message={
-                "userId": user_id,
-                "taskId": task_id,
-                "filePath": minio_object_path
-            })
+                await send_message_to_queue(queue_name=QUEUES.JSON_TO_SHEET, message={
+                    "userId": user_id,
+                    "taskId": task_id,
+                    "filePath": minio_object_path
+                })
 
-            # Cleanup
-            await cleanup_files([local_path, json_path])
+                # Cleanup
+                await cleanup_files([local_path, json_path])
 
-            logger.info(f"Completed task {task_id}")
+                logger.info(f"Completed task {task_id}")
 
-        except Exception as e:
-            logger.error(f"Failed processing message: {str(e)}")
+            except Exception as e:
+                logger.error(f"Failed processing message: {str(e)}")
 
 async def start_consumer(keys):
     """
@@ -89,6 +90,7 @@ async def start_consumer(keys):
     async with connection:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY)
+        semaphore = asyncio.Semaphore(SERVICE_CONFIG.CONCURRENCY)
         
         queue = await channel.declare_queue(
             QUEUES.TXT_TO_JSON,
@@ -99,7 +101,7 @@ async def start_consumer(keys):
             async for message in queue_iter:
                 if shutdown_event.is_set():
                     break
-                await process_message(message, keys)
+                await process_message(message, keys, semaphore)
 
 async def main():
     """

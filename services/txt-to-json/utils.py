@@ -1,8 +1,9 @@
 import asyncio
 import json
 import os
+import random
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime
 from redis import asyncio as redis
 from google.generativeai import GenerativeModel, configure, GenerationConfig
 import aio_pika
@@ -36,6 +37,7 @@ async def initialize_redis():
     for api_key in api_keys:
         if not await redis_client.exists(f"gemini:keys:{api_key}"):
             await init_key(api_key)
+
     logger.info(f"Initialized Redis with {len(api_keys)} API keys.")
     return redis_client, api_keys
 
@@ -53,69 +55,52 @@ async def init_key(api_key):
     })
     logger.info(f"Initialized API key: {api_key}")
 
-async def get_available_key(keys):
-    """
-    Get an available API key that is not rate-limited.
-    """
+async def get_available_key(keys:str):
+    shuffled_keys = random.sample(keys, len(keys))
     now = datetime.now().timestamp()
-    for api_key in keys:
-        key_data = await redis_client.hgetall(f"gemini:keys:{api_key}")
-        cooldown_until = key_data.get("cooldown_until", "0")
-        if key_data["is_rate_limited"] == "true" and datetime.now().timestamp() < float(cooldown_until):
-            logger.info(f"API Key {api_key} is rate limited. Skipping...")
-            continue
-        await reset_expired_windows(api_key, now)
-        if int(key_data["minute_count"]) >= 15 or int(key_data["daily_count"]) >= 1500:
-            logger.info(f"API Key {api_key} has exceeded rate limits. Skipping...")
-            continue
+
+    for api_key in shuffled_keys:
+        # Evaluate Lua script atomically
         success = await redis_client.eval(
             """
-            local current_minute = tonumber(redis.call('HGET', KEYS[1], 'minute_count'))
-            local current_daily = tonumber(redis.call('HGET', KEYS[1], 'daily_count'))
-            if current_minute < 15 and current_daily < 1500 then
-                redis.call('HINCRBY', KEYS[1], 'minute_count', 1)
-                redis.call('HINCRBY', KEYS[1], 'daily_count', 1)
+            local key = KEYS[1]
+            local now = tonumber(ARGV[1])
+            
+            -- Check cooldown
+            local cooldown_until = tonumber(redis.call('HGET', key, 'cooldown_until') or '0')
+            if cooldown_until > now then
+                return 0
+            end
+            
+            -- Reset windows if expired
+            local daily_start = tonumber(redis.call('HGET', key, 'daily_window_start') or '0')
+            if (now - daily_start) >= 86400 then
+                redis.call('HMSET', key, 'daily_count', 0, 'daily_window_start', now)
+            end
+            local minute_start = tonumber(redis.call('HGET', key, 'minute_window_start') or '0')
+            if (now - minute_start) >= 60 then
+                redis.call('HMSET', key, 'minute_count', 0, 'minute_window_start', now)
+            end
+            
+            -- Check limits and increment
+            local minute_count = tonumber(redis.call('HGET', key, 'minute_count') or '0')
+            local daily_count = tonumber(redis.call('HGET', key, 'daily_count') or '0')
+            if minute_count < 15 and daily_count < 1500 then
+                redis.call('HINCRBY', key, 'minute_count', 1)
+                redis.call('HINCRBY', key, 'daily_count', 1)
                 return 1
             end
             return 0
             """,
-            1, f"gemini:keys:{api_key}"
+            1,
+            f"gemini:keys:{api_key}",
+            str(now)
         )
+
         if success:
-            logger.info(f"Using API Key {api_key} for processing. Key info: {key_data}")
+            logger.info(f"Using API Key {api_key}")
             return api_key
-    logger.warning("No available API keys found.")
     return None
-
-async def reset_expired_windows(api_key, now):
-    """
-    Reset rate-limiting windows if they have expired.
-    """
-    key_data = await redis_client.hgetall(f"gemini:keys:{api_key}")
-    daily_window_start = key_data.get("daily_window_start", "0")
-    minute_window_start = key_data.get("minute_window_start", "0")
-    if (now - float(daily_window_start)) > 86400:
-        await redis_client.hset(f"gemini:keys:{api_key}", mapping={
-            "daily_count": "0",
-            "daily_window_start": str(now)
-        })
-        logger.info(f"Reset daily window for API Key {api_key}")
-    if (now - float(minute_window_start)) > 60:
-        await redis_client.hset(f"gemini:keys:{api_key}", mapping={
-            "minute_count": "0",
-            "minute_window_start": str(now)
-        })
-        logger.info(f"Reset minute window for API Key {api_key}")
-
-async def mark_rate_limited(api_key, cooldown=60):
-    """
-    Mark an API key as rate-limited.
-    """
-    await redis_client.hset(f"gemini:keys:{api_key}", mapping={
-        "is_rate_limited": "true",
-        "cooldown_until": str((datetime.now() + timedelta(seconds=cooldown)).timestamp())
-    })
-    logger.warning(f"API Key {api_key} marked as rate-limited for {cooldown} seconds.")
 
 # Minio Client
 minio_client = Minio(
@@ -149,7 +134,6 @@ async def upload_json_file(user_id: str, task_id: str, json_file_path: str) -> s
     logger.info(f"Uploaded {json_file_path} to MinIO at {minio_object_path}")
     return minio_object_path
 
-# Gemini Service
 async def extract_data(text_content, keys):
     """
     Extract data from text using the Gemini API.

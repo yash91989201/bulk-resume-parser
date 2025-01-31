@@ -17,7 +17,7 @@ class RABBITMQ_CONFIG:
     URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
 
 class SERVICE_CONFIG:
-    DOWNLOAD_DIR = "/tmp/json-files"
+    DOWNLOAD_DIR = "/tmp/processed-json-files"
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
     CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
