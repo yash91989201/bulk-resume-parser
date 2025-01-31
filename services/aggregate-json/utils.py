@@ -1,8 +1,7 @@
 import json
 import logging
 import os
-from typing import List, Optional
-import pandas as pd
+from typing import List, Dict, Optional
 from minio import Minio
 import aio_pika
 import aiohttp
@@ -16,7 +15,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-logger = logging.getLogger("json_to_sheet_service")
+logger = logging.getLogger("aggregate_json_service")
 
 minio_client = Minio(
     endpoint=MINIO_CONFIG.ENDPOINT,
@@ -108,37 +107,42 @@ async def download_json_file(file_path: str) -> str:
         The local file path.
     """
     local_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
-    minio_client.fget_object(MINIO_BUCKETS.AGGREGATED_RESULTS, file_path, local_file_path)
+    minio_client.fget_object(MINIO_BUCKETS.PROCESSED_JSON_FILES, file_path, local_file_path)
     return local_file_path
 
-async def convert_json_to_excel(json_file_path: str, excel_file_path: str):
+async def append_to_json_file(task_name:str, data: Dict):
     """
-    Converts a JSON file to an Excel file.
+    Appends data to a JSON file on disk. Creates the file if it doesn't exist.
 
     Args:
-        json_file_path: The path of the JSON file.
-        excel_file_path: The path of the Excel file to create.
-    """
-    with open(json_file_path, "r") as json_file:
-        data = json.load(json_file)
-        df = pd.DataFrame(data)
-        df.to_excel(excel_file_path, index=False)
-
-async def upload_excel_file(user_id: str, task_id: str, excel_file_path: str) -> str:
-    """
-    Uploads an Excel file to MinIO.
-
-    Args:
-        user_id: The user ID.
         task_id: The task ID.
-        excel_file_path: The path of the local Excel file.
+        data: The data to append.
+    """
+    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
+    if os.path.exists(json_file_path):
+        with open(json_file_path, "r") as json_file:
+            existing_data = json.load(json_file)
+        existing_data.append(data)
+    else:
+        existing_data = [data]
+
+    with open(json_file_path, "w") as json_file:
+        json.dump(existing_data, json_file)
+
+async def upload_aggregated_json( user_id: str, task_id:str, task_name:str) -> str:
+    """
+    Uploads the aggregated JSON file to MinIO.
+
+    Args:
+        task_id: The task ID.
+        user_id: The user ID.
 
     Returns:
         The MinIO object path of the uploaded file.
     """
-    excel_filename = os.path.basename(excel_file_path)
-    minio_object_path = os.path.join(user_id, task_id, excel_filename)
-    minio_client.fput_object(MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, excel_file_path)
+    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
+    minio_object_path = os.path.join(user_id, task_id, f"{task_name}-result.json")
+    minio_client.fput_object(MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, json_file_path)
     return minio_object_path
 
 async def cleanup_files(file_paths: List[str]):
@@ -154,12 +158,7 @@ async def cleanup_files(file_paths: List[str]):
         except Exception as e:
             logger.error(f"Error deleting {file_path}: {e}")
 
-async def get_rabbit_mq_connection():
-    """Returns a connection to RabbitMQ."""
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
-    return connection
-
-async def send_message_to_queue(queue_name: str, message: dict):
+async def send_message_to_queue(queue_name: str, message: Dict):
     """
     Sends a message to the specified RabbitMQ queue.
 
@@ -167,7 +166,7 @@ async def send_message_to_queue(queue_name: str, message: dict):
         queue_name: The RabbitMQ queue name.
         message: The message to send.
     """
-    connection = await get_rabbit_mq_connection()
+    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
     async with connection:
         channel = await connection.channel()
         await channel.default_exchange.publish(

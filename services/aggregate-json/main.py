@@ -4,20 +4,25 @@ import signal
 import os
 import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
+from collections import defaultdict
 from config import RABBITMQ_CONFIG, SERVICE_CONFIG, QUEUES
 from utils import (
     logger,
     download_json_file,
     fetch_parsing_task,
     update_parsing_task,
-    convert_json_to_excel,
-    upload_excel_file,
+    append_to_json_file,
+    upload_aggregated_json,
     cleanup_files,
     TaskStatus,
+    send_message_to_queue,
 )
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
+
+# Global dictionary to hold locks for each task
+task_locks = defaultdict(asyncio.Lock)
 
 async def process_message(message: AbstractIncomingMessage):
     """Processes a single RabbitMQ message."""
@@ -31,36 +36,61 @@ async def process_message(message: AbstractIncomingMessage):
         if not user_id or not task_id or not file_path:
             raise ValueError("Invalid message: Missing required fields.")
 
-        logger.info(f"Processing task {task_id} for user {user_id}")
+        logger.info(f"Processing data for user {user_id}, task {task_id}")
 
-        # Fetch the latest task status
-        parsing_task = await fetch_parsing_task(task_id)
-        if parsing_task.taskStatus in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
-            logger.info(f"Task {task_id} is {parsing_task.taskStatus}, skipping.")
-            await message.ack()
-            return
-
-        # Download the aggregated JSON file
+        # Download JSON file
         json_file_path = await download_json_file(file_path)
 
-        # Convert JSON to Excel
-        excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.xlsx")
-        await convert_json_to_excel(json_file_path, excel_file_path)
+        # Process JSON data
+        with open(json_file_path, "r") as json_file:
+            extracted_data = json.load(json_file)
 
-        # Upload the Excel file to MinIO
-        minio_object_path = await upload_excel_file(user_id, task_id, excel_file_path)
+        # Acquire per-task lock to synchronize critical sections
+        async with task_locks[task_id]:
+            # Fetch the latest task status under lock
+            parsing_task = await fetch_parsing_task(task_id)
+            if parsing_task.taskStatus in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+                logger.info(f"Task {task_id} is {parsing_task.taskStatus}, skipping.")
+                await message.ack()
+                await cleanup_files([json_file_path])
+                return
 
-        # Mark the task as completed
-        await update_parsing_task(task_id, {
-            "sheetFilePath": minio_object_path,
-            "taskStatus": TaskStatus.COMPLETED.value,
-        })
+            # Append data to the JSON file on disk
+            await append_to_json_file(parsing_task.taskName, extracted_data)
 
-        # Cleanup temporary files
-        await cleanup_files([json_file_path, excel_file_path])
+            # Update processed files count
+            updated_processed_files = parsing_task.processedFiles + 1
+            await update_parsing_task(task_id, {"processedFiles": updated_processed_files})
+
+            # Finalize if all files processed
+            if updated_processed_files == parsing_task.totalFiles - parsing_task.invalidFiles:
+                # Upload aggregated JSON to MinIO
+                minio_object_path = await upload_aggregated_json(user_id, task_id, parsing_task.taskName)
+
+                # Send message to json_to_sheet queue
+                await send_message_to_queue(QUEUES.JSON_TO_SHEET, {
+                    "userId": user_id,
+                    "taskId": task_id,
+                    "filePath": minio_object_path,
+                })
+
+                # Mark task as completed
+                await update_parsing_task(task_id, {
+                    "taskStatus": TaskStatus.COMPLETED.value,
+                    "jsonFilePath": minio_object_path,
+                })
+
+                # Clean up the aggregated JSON file
+                await cleanup_files([os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.json")])
+                logger.info(f"Task {task_id} completed and forwarded to json_to_sheet queue.")
+            elif parsing_task.taskStatus != TaskStatus.AGGREGATING:
+                await update_parsing_task(task_id, {"taskStatus": TaskStatus.AGGREGATING.value})
+
+        # Cleanup JSON file (outside lock)
+        await cleanup_files([json_file_path])
 
         await message.ack()
-        logger.info(f"Task {task_id} completed and Excel file uploaded to MinIO.")
+        logger.info(f"Processed file {file_path} for task {task_id}")
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
@@ -85,7 +115,7 @@ async def start_message_consumer():
             async with connection:
                 channel = await connection.channel()
                 await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY)
-                queue = await channel.declare_queue(QUEUES.JSON_TO_SHEET, durable=True)
+                queue = await channel.declare_queue(QUEUES.AGGREGATE_JSON, durable=True)
 
                 task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE)
                 workers = [asyncio.create_task(worker(task_queue, i)) for i in range(SERVICE_CONFIG.WORKER_COUNT)]
