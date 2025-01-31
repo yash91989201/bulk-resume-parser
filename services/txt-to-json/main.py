@@ -4,13 +4,13 @@ import os
 import signal
 from aio_pika.abc import AbstractIncomingMessage
 from config import SERVICE_CONFIG, MINIO_BUCKETS,  QUEUES
+import resume_data_extractor
+from resume_data_extractor import resume_data_extractor
 from utils import (
     get_rabbitmq_connection,
     logger,
-    extract_data, 
     cleanup_files, 
     download_file, 
-    init_api_keys, 
     upload_json_file,
     send_message_to_queue, 
 )
@@ -54,7 +54,8 @@ async def process_message(message: AbstractIncomingMessage):
             with open(local_path, "r") as f:
                 content = f.read()
 
-            extracted_data = await extract_data(content)
+            extracted_data = await resume_data_extractor.extract_data(content)
+            logger.info(f"extract_data {extracted_data}")
 
             # Construct upload path for JSON file
             json_file = f"{user_id}/{task_id}/{os.path.splitext(os.path.basename(file_path))[0]}.json"
@@ -146,7 +147,7 @@ async def main():
     os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
     
     # Initialize Redis
-    await init_api_keys()
+    await resume_data_extractor.init_api_keys()
     
     # Start consumer
     await start_message_consumer()
