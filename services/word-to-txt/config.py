@@ -7,8 +7,6 @@ class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/word-to-txt"
     # no of workers spawned to process message from rabbit mq
     WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))
-    # no of messages a single worker can process while waiting for an I/O process to complete
-    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",3))
     # size of the local task queue
     QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",10))
     # no of messages to fetch from rabbitmq queue 

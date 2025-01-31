@@ -8,7 +8,7 @@ import aio_pika
 import pytesseract
 import numpy as np
 from minio import Minio
-from config import CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
 
 pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
@@ -42,7 +42,7 @@ async def download_img_file(file_path: str) -> str:
     Returns:
         img_file_path: The local file path.
     """
-    img_file_path = os.path.join(CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+    img_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
     minio_client.fget_object(MINIO_BUCKETS.PARSEABLE_FILES, file_path, img_file_path)
     return img_file_path
 
@@ -73,8 +73,8 @@ def extract_img_to_txt_file(img_file_path: str) -> str:
 
     # Save the extracted text to a file
     txt_filename = os.path.splitext(os.path.basename(img_file_path))[0] + ".txt"
-    txt_file_path = os.path.join(CONFIG.DOWNLOAD_DIR, txt_filename)
-    os.makedirs(CONFIG.DOWNLOAD_DIR, exist_ok=True)  # Ensure the directory exists
+    txt_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, txt_filename)
+    os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)  # Ensure the directory exists
 
     with open(txt_file_path, "w", encoding="utf-8") as txt_file:
         txt_file.write(extracted_text)

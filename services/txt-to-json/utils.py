@@ -68,7 +68,7 @@ async def init_key(api_key):
 
 async def get_available_key():
     """
-    Get an available API key directly from Redis and print its stats
+    Get an available API key directly from Redis and print its stats.
     """
     keys = await get_redis_keys()
     if not keys:
@@ -96,12 +96,17 @@ async def get_available_key():
                     )
                 end
 
-                -- Fetch values from Redis (with defaults)
-                local cooldown_until = tonumber(redis.call('HGET', key, 'cooldown_until') or 0)
-                local daily_window_start = tonumber(redis.call('HGET', key, 'daily_window_start') or now)
-                local minute_window_start = tonumber(redis.call('HGET', key, 'minute_window_start') or now)
-                local daily_count = tonumber(redis.call('HGET', key, 'daily_count') or 0)
-                local minute_count = tonumber(redis.call('HGET', key, 'minute_count') or 0)
+                -- Fetch values from Redis (ensuring defaults)
+                local function get_number_field(field, default)
+                    local value = redis.call('HGET', key, field)
+                    return (value and tonumber(value)) or default
+                end
+
+                local cooldown_until = get_number_field('cooldown_until', 0)
+                local daily_window_start = get_number_field('daily_window_start', now)
+                local minute_window_start = get_number_field('minute_window_start', now)
+                local daily_count = get_number_field('daily_count', 0)
+                local minute_count = get_number_field('minute_count', 0)
 
                 -- Check cooldown
                 if cooldown_until > now then

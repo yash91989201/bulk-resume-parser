@@ -6,7 +6,7 @@ from typing import List
 import PyPDF2
 import aio_pika
 from minio import Minio
-from config import CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
 
 # Logging Configuration
 logging.basicConfig(
@@ -38,7 +38,7 @@ async def download_pdf_file(file_path:str)->str:
     Returns:
         The local file path.
     """
-    local_file_path = os.path.join(CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+    local_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
     minio_client.fget_object(MINIO_BUCKETS.PARSEABLE_FILES, file_path, local_file_path)
     return local_file_path
 
@@ -51,7 +51,7 @@ def extract_pdf_to_txt_file(pdf_file_path:str)-> str:
         txt_file_path: The path of txt file locally
     """
     txt_file_name = os.path.splitext(os.path.basename(pdf_file_path))[0] + ".txt"
-    txt_file_path = os.path.join(CONFIG.DOWNLOAD_DIR, txt_file_name)
+    txt_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, txt_file_name)
 
     try:
         text_content = ""

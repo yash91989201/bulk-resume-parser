@@ -58,7 +58,7 @@ async def process_message(message: AbstractIncomingMessage):
             processable_files = parsing_task.totalFiles - parsing_task.invalidFiles
 
             # Append data to Excel (synchronized)
-            excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, user_id, task_id, f"{task_id}.xlsx")
+            excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, user_id, task_id, f"{parsing_task.taskName}-result.xlsx")
             await append_to_excel_file(extracted_data, excel_file_path)
 
             # Update processed files count (synchronized)
