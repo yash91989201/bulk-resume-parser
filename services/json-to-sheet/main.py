@@ -100,17 +100,18 @@ async def worker(task_queue, worker_id):
 
 async def start_message_consumer():
     """Start consumer with a shared queue and multiple workers."""
-    total_workers = 10  # Adjust based on system capacity
+
     while not shutdown_event.is_set():
         try:
             connection = await get_rabbit_mq_connection()
             async with connection:
                 channel = await connection.channel()
-                await channel.set_qos(prefetch_count=100)  # Higher for more parallelism
+
+                await channel.set_qos(prefetch_count= SERVICE_CONFIG.CONCURRENCY)
                 queue = await channel.declare_queue(QUEUES.JSON_TO_SHEET, durable=True)
 
-                task_queue = asyncio.Queue()
-                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(total_workers)]
+                task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE)
+                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(SERVICE_CONFIG.WORKER_COUNT)]
 
                 async def enqueue_message(message):
                     await task_queue.put(message)

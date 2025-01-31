@@ -4,11 +4,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class SERVICE_CONFIG:
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",10))
-    MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
-    WORKER_COUNT = int(os.getenv("MAX_RETRIES", 3))
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
     DOWNLOAD_DIR = "/tmp/word-to-txt"
+    # no of workers spawned to process message from rabbit mq
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))
+    # no of messages a single worker can process while waiting for an I/O process to complete
+    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",3))
+    # size of the local task queue
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",10))
+    # no of messages to fetch from rabbitmq queue 
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
 
 class MINIO_CONFIG:
     ENDPOINT = os.getenv("S3_ENDPOINT","localhost:9000") 

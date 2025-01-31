@@ -18,6 +18,7 @@ class RABBITMQ_CONFIG:
 
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/processed-json-files"
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
     # no of workers spawned to process message from rabbit mq
     WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))
     # no of messages a single worker can process while waiting for an I/O process to complete
@@ -28,7 +29,6 @@ class SERVICE_CONFIG:
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
     # no of messages to fetch from rabbitmq queue 
     CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
-    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 class QUEUES:
     TXT_TO_JSON = "txt_to_json_queue"

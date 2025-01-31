@@ -3,7 +3,7 @@ import json
 import logging
 import asyncio
 import signal
-from config import CONFIG, QUEUES
+from config import SERVICE_CONFIG, QUEUES
 from utils import (
         logger, 
         cleanup_files, 
@@ -83,14 +83,14 @@ async def start_message_consumer():
                 channel = await connection.channel()
 
                 # Set QoS to allow multiple unacknowledged messages
-                await channel.set_qos(prefetch_count=10)  # Allow up to 10 concurrent messages
+                await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY)
 
                 # Declare the queue
                 queue = await channel.declare_queue(QUEUES.IMG_TO_TXT, durable=True)
 
                 # Task queue and worker pool
-                task_queue = asyncio.Queue(maxsize=10)  # Limit to 10 concurrent tasks
-                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(10)]  # 10 workers
+                task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE)  
+                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(SERVICE_CONFIG.WORKER_COUNT)] 
 
                 async def enqueue_message(message):
                     await task_queue.put(message)
@@ -128,7 +128,7 @@ async def main():
     """
     Main function to start the application.
     """
-    os.makedirs(CONFIG.DOWNLOAD_DIR, exist_ok=True)
+    os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
 
     await start_message_consumer()
 

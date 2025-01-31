@@ -3,8 +3,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class CONFIG:
+class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/pdf-to-txt"
+    # no of workers spawned to process message from rabbit mq
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))
+    # size of the local task queue
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",10))
+    # no of messages to fetch from rabbitmq queue 
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 10))
 
 class RABBITMQ_CONFIG:
     URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
