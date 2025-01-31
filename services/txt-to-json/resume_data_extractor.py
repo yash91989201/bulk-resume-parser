@@ -1,22 +1,13 @@
 import asyncio
 import json
 import os
-import random
 from typing import List, Set, Optional, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from redis import asyncio as redis
 from config import SERVICE_CONFIG
 from google.generativeai import GenerativeModel, configure, GenerationConfig
-import logging
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-
-logger = logging.getLogger("rabbitmq_consumer")
+from utils import logger
 
 class ResumeDataExtractor:
     def __init__(self, redis_url: str, max_retries: int = 3):
@@ -46,7 +37,8 @@ class ResumeDataExtractor:
                     "minute_window_start": "0",
                     "daily_window_start": "0",
                     "is_rate_limited": "false",
-                    "cooldown_until": ""
+                    "cooldown_until": "",
+                    "last_used": "0"  # Initialize last_used timestamp
                 })
 
                 logger.info(f"Initialized API key: {api_key}")
@@ -54,9 +46,20 @@ class ResumeDataExtractor:
         self._initialized = True
         logger.info(f"Initialized Redis with {len(api_keys)} API keys.")
 
+    async def mark_key_as_rate_limited(self, api_key: str):
+        """
+        Mark an API key as rate-limited and set a cooldown period of 24 hours.
+        """
+        cooldown_until = (datetime.now() + timedelta(hours=24)).timestamp()
+        await self.redis_client.hset(f"gemini:keys:{api_key}", mapping={
+            "is_rate_limited": "true",
+            "cooldown_until": cooldown_until
+        })
+        logger.warning(f"API Key {api_key} marked as rate-limited. Cooldown until: {datetime.fromtimestamp(cooldown_until)}")
+
     async def get_available_key(self) -> Optional[str]:
         """
-        Get an available API key directly from Redis and print its stats.
+        Get an available API key using an LRU (Least Recently Used) mechanism.
         """
         # Ensure Redis is initialized before proceeding
         while not self._initialized:
@@ -68,9 +71,17 @@ class ResumeDataExtractor:
             return None
 
         now = datetime.now().timestamp()
-        shuffled_keys = random.sample(keys, len(keys))
 
-        for api_key in shuffled_keys:
+        # Fetch all keys with their last_used timestamps
+        key_last_used = {}
+        for api_key in keys:
+            last_used = await self.redis_client.hget(f"gemini:keys:{api_key}", "last_used")
+            key_last_used[api_key] = float(last_used) if last_used else 0
+
+        # Sort keys by last_used timestamp (ascending order)
+        sorted_keys = sorted(keys, key=lambda k: key_last_used[k])
+
+        for api_key in sorted_keys:
             try:
                 success = await self.redis_client.eval(
                     """
@@ -84,7 +95,8 @@ class ResumeDataExtractor:
                             'daily_window_start', now,
                             'minute_window_start', now,
                             'daily_count', 0,
-                            'minute_count', 0
+                            'minute_count', 0,
+                            'last_used', 0
                         )
                     end
 
@@ -99,9 +111,10 @@ class ResumeDataExtractor:
                     local minute_window_start = get_number_field('minute_window_start', now)
                     local daily_count = get_number_field('daily_count', 0)
                     local minute_count = get_number_field('minute_count', 0)
+                    local is_rate_limited = redis.call('HGET', key, 'is_rate_limited') or "false"
 
                     -- Check cooldown
-                    if cooldown_until > now then
+                    if cooldown_until > now or is_rate_limited == "true" then
                         return 0
                     end
 
@@ -119,11 +132,12 @@ class ResumeDataExtractor:
                     if minute_count < 15 and daily_count < 1500 then
                         redis.call('HINCRBY', key, 'minute_count', 1)
                         redis.call('HINCRBY', key, 'daily_count', 1)
+                        redis.call('HSET', key, 'last_used', now)  -- Update last_used timestamp
                         return 1
                     end
 
                     return 0
-                    """, 
+                    """,
                     1,  # Number of keys
                     f"gemini:keys:{api_key}",
                     str(now)
@@ -217,7 +231,7 @@ class ResumeDataExtractor:
                 
             try:
                 configure(api_key=api_key)
-                gemini = GenerativeModel("gemini-1.5-flash")
+                gemini = GenerativeModel(SERVICE_CONFIG.GEMINI_MODEL)
                 response = await asyncio.to_thread(
                     gemini.generate_content,
                     prompt,
@@ -234,7 +248,11 @@ class ResumeDataExtractor:
                 return self.validate_response(response.text)
                 
             except Exception as e:
-                logger.error(f"Error processing with API Key {api_key}: {str(e)}")
+                if "429" in str(e):  # Check if the error is a 429 (rate limit exceeded)
+                    await self.mark_key_as_rate_limited(api_key)
+                else:
+                    logger.error(f"Error processing with API Key {api_key}: {str(e)}")
+                
                 if attempt == self.max_retries - 1:
                     logger.error("Max retries reached. Raising exception.")
                     raise

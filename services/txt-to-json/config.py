@@ -19,6 +19,7 @@ class RABBITMQ_CONFIG:
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/processed-json-files"
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL","gemini-2.0-flash-exp")
     # no of workers spawned to process message from rabbit mq
     WORKER_COUNT = int(os.getenv("WORKER_COUNT",15))
     # no of messages a single worker can process while waiting for an I/O process to complete
