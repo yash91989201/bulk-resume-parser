@@ -21,45 +21,46 @@ shutdown_event = asyncio.Event()
 
 async def process_message(message: AbstractIncomingMessage):
     """Processes a single RabbitMQ message."""
-    try:
-        # Parse and validate the message
-        message_data = json.loads(message.body)
-        user_id = message_data.get("userId")
-        task_id = message_data.get("taskId")
-        file_path = message_data.get("filePath")
+    async with message.process():
+        try:
+            # Parse and validate the message
+            message_data = json.loads(message.body)
+            user_id = message_data.get("userId")
+            task_id = message_data.get("taskId")
+            file_path = message_data.get("filePath")
 
-        if not user_id or not task_id or not file_path:
-            raise ValueError("Invalid message: Missing required fields.")
+            if not user_id or not task_id or not file_path:
+                raise ValueError("Invalid message: Missing required fields.")
 
-        logger.info(f"Processing task {task_id} for user {user_id}")
+            logger.info(f"Processing task {task_id} for user {user_id}")
 
-        # Fetch the latest task status
-        parsing_task = await fetch_parsing_task(task_id)
+            # Fetch the latest task status
+            parsing_task = await fetch_parsing_task(task_id)
 
-        # Download the aggregated JSON file
-        json_file_path = await download_json_file(file_path)
+            # Download the aggregated JSON file
+            json_file_path = await download_json_file(file_path)
 
-        # Convert JSON to Excel
-        excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.xlsx")
-        await convert_json_to_excel(json_file_path, excel_file_path)
+            # Convert JSON to Excel
+            excel_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.xlsx")
+            await convert_json_to_excel(json_file_path, excel_file_path)
 
-        # Upload the Excel file to MinIO
-        minio_object_path = await upload_excel_file(user_id, task_id, excel_file_path)
+            # Upload the Excel file to MinIO
+            minio_object_path = await upload_excel_file(user_id, task_id, excel_file_path)
 
-        # Mark the task as completed
-        await update_parsing_task(task_id, {
-            "sheetFilePath": minio_object_path,
-            "taskStatus": TaskStatus.COMPLETED.value,
-        })
+            # Mark the task as completed
+            await update_parsing_task(task_id, {
+                "sheetFilePath": minio_object_path,
+                "taskStatus": TaskStatus.COMPLETED.value,
+            })
 
-        # Cleanup temporary files
-        await cleanup_files([json_file_path, excel_file_path])
+            # Cleanup temporary files
+            await cleanup_files([json_file_path, excel_file_path])
 
-        logger.info(f"Task {task_id} completed and Excel file uploaded to MinIO.")
+            logger.info(f"Task {task_id} completed and Excel file uploaded to MinIO.")
 
-    except Exception as e:
-        logger.error(f"Error processing message: {e}")
-        await message.nack(requeue=False)
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id):
     """Worker function processing messages from a shared queue."""

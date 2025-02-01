@@ -26,44 +26,45 @@ async def process_message(message:AbstractIncomingMessage):
     Args:
         message: The RabbitMQ message instance.
     """
-    try:
-        message_data = json.loads(message.body)
-        user_id = message_data.get("userId")
-        task_id = message_data.get("taskId")
-        file_path = message_data.get("filePath")
+    async with message.process():
+        try:
+            message_data = json.loads(message.body)
+            user_id = message_data.get("userId")
+            task_id = message_data.get("taskId")
+            file_path = message_data.get("filePath")
 
-        if not file_path or not user_id or not task_id:
-            raise ValueError("Invalid message: Missing required fields.")
+            if not file_path or not user_id or not task_id:
+                raise ValueError("Invalid message: Missing required fields.")
 
-        logging.info(f"Processing file: {file_path} for user {user_id}, task {task_id}")
+            logging.info(f"Processing file: {file_path} for user {user_id}, task {task_id}")
 
-        # Step 1: Download file from MinIO
-        pdf_file_path = await download_pdf_file(file_path)
+            # Step 1: Download file from MinIO
+            pdf_file_path = await download_pdf_file(file_path)
 
-        # Step 2: Extract text from the PDF file and save in .txt file
-        txt_file_path = extract_pdf_to_txt_file(pdf_file_path)
+            # Step 2: Extract text from the PDF file and save in .txt file
+            txt_file_path = extract_pdf_to_txt_file(pdf_file_path)
 
-        # Step 3: Upload .txt file to MinIO
-        minio_object_path = await upload_txt_file(user_id, task_id, txt_file_path)
+            # Step 3: Upload .txt file to MinIO
+            minio_object_path = await upload_txt_file(user_id, task_id, txt_file_path)
 
-        # Step 4: Send message to text-to-json queue
-        await send_message_to_queue(
-            queue_name=QUEUES.TXT_TO_JSON,
-            message={
-                "userId": user_id,
-                "taskId": task_id,
-                "filePath": minio_object_path
-            }
-        )
+            # Step 4: Send message to text-to-json queue
+            await send_message_to_queue(
+                queue_name=QUEUES.TXT_TO_JSON,
+                message={
+                    "userId": user_id,
+                    "taskId": task_id,
+                    "filePath": minio_object_path
+                }
+            )
 
-        # Step 5: Cleanup temporary files
-        await cleanup_files([pdf_file_path, txt_file_path])
+            # Step 5: Cleanup temporary files
+            await cleanup_files([pdf_file_path, txt_file_path])
 
-        logging.info("Processing completed successfully.")
+            logging.info("Processing completed successfully.")
 
-    except Exception as e:
-        logging.error(f"Error processing message: {e}")
-        await message.nack(requeue=False)
+        except Exception as e:
+            logging.error(f"Error processing message: {e}")
+            await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id):
     """

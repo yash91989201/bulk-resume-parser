@@ -24,38 +24,40 @@ async def process_message(message:AbstractIncomingMessage):
     Args:
         message: The RabbitMQ message instance.
     """
-    try:
-        message_data = json.loads(message.body)
-        user_id = message_data.get("userId")
-        task_id = message_data.get("taskId")
 
-        if not user_id or not task_id:
-            raise ValueError("Invalid message: Missing required fields.")
+    async with message.process()
+        try:
+            message_data = json.loads(message.body)
+            user_id = message_data.get("userId")
+            task_id = message_data.get("taskId")
 
-        logging.info(f"user {user_id}, task {task_id}")
+            if not user_id or not task_id:
+                raise ValueError("Invalid message: Missing required fields.")
 
-        # Step 1: get the parseable files from db using api
-        parseable_files = await get_parseable_files(task_id)
+            logging.info(f"user {user_id}, task {task_id}")
 
-        if len(parseable_files) > 0:
-            # Step 2: send message to respective queues for file processing
-            for parseable_file in parseable_files:
-                await send_message_to_queue(
-                    queue_name= get_queue_name_by_file_path(parseable_file.filePath),
-                    message = {
-                        "userId": user_id,
-                        "taskId": task_id,
-                        "filePath": parseable_file.filePath
-                    }
-                )
+            # Step 1: get the parseable files from db using api
+            parseable_files = await get_parseable_files(task_id)
 
-                logging.info("Send message for further processing.")
-        else:
-            logging.info("No parseable files to perform conversion")
+            if len(parseable_files) > 0:
+                # Step 2: send message to respective queues for file processing
+                for parseable_file in parseable_files:
+                    await send_message_to_queue(
+                        queue_name= get_queue_name_by_file_path(parseable_file.filePath),
+                        message = {
+                            "userId": user_id,
+                            "taskId": task_id,
+                            "filePath": parseable_file.filePath
+                        }
+                    )
 
-    except Exception as e:
-        logging.error(f"Error processing message: {e}")
-        await message.nack(requeue=False)
+                    logging.info("Send message for further processing.")
+            else:
+                logging.info("No parseable files to perform conversion")
+
+        except Exception as e:
+            logging.error(f"Error processing message: {e}")
+            await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id):
     """

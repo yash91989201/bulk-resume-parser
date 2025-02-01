@@ -14,7 +14,6 @@ from utils import (
     append_to_json_file,
     upload_aggregated_json,
     cleanup_files,
-    TaskStatus,
     send_message_to_queue,
 )
 
@@ -26,66 +25,68 @@ task_locks = defaultdict(asyncio.Lock)
 
 async def process_message(message: AbstractIncomingMessage):
     """Processes a single RabbitMQ message."""
-    try:
-        # Parse and validate the message
-        message_data = json.loads(message.body)
-        user_id = message_data.get("userId")
-        task_id = message_data.get("taskId")
-        file_path = message_data.get("filePath")
 
-        if not user_id or not task_id or not file_path:
-            raise ValueError("Invalid message: Missing required fields.")
+    async with message.process():
+        try:
+            # Parse and validate the message
+            message_data = json.loads(message.body)
+            user_id = message_data.get("userId")
+            task_id = message_data.get("taskId")
+            file_path = message_data.get("filePath")
 
-        logger.info(f"Processing data for user {user_id}, task {task_id}")
+            if not user_id or not task_id or not file_path:
+                raise ValueError("Invalid message: Missing required fields.")
 
-        # Download JSON file
-        json_file_path = await download_json_file(file_path)
+            logger.info(f"Processing data for user {user_id}, task {task_id}")
 
-        # Process JSON data
-        with open(json_file_path, "r") as json_file:
-            extracted_data = json.load(json_file)
+            # Download JSON file
+            json_file_path = await download_json_file(file_path)
 
-        # Acquire per-task lock to synchronize critical sections
-        async with task_locks[task_id]:
-            # Fetch the latest task status under lock
-            parsing_task = await fetch_parsing_task(task_id)
+            # Process JSON data
+            with open(json_file_path, "r") as json_file:
+                extracted_data = json.load(json_file)
 
-            # Append data to the JSON file on disk
-            await append_to_json_file(parsing_task.taskName, extracted_data)
+            # Acquire per-task lock to synchronize critical sections
+            async with task_locks[task_id]:
+                # Fetch the latest task status under lock
+                parsing_task = await fetch_parsing_task(task_id)
 
-            # Update processed files count
-            updated_processed_files = parsing_task.processedFiles + 1
-            await update_parsing_task(task_id, {"processedFiles": updated_processed_files})
+                # Append data to the JSON file on disk
+                await append_to_json_file(parsing_task.taskName, extracted_data)
 
-            # Finalize if all files processed
-            if updated_processed_files == parsing_task.totalFiles - parsing_task.invalidFiles:
-                # Upload aggregated JSON to MinIO
-                minio_object_path = await upload_aggregated_json(user_id, task_id, parsing_task.taskName)
+                # Update processed files count
+                updated_processed_files = parsing_task.processedFiles + 1
+                await update_parsing_task(task_id, {"processedFiles": updated_processed_files})
 
-                # Mark task as completed
-                await update_parsing_task(task_id, {
-                    "jsonFilePath": minio_object_path,
-                })
+                # Finalize if all files processed
+                if updated_processed_files == parsing_task.totalFiles - parsing_task.invalidFiles:
+                    # Upload aggregated JSON to MinIO
+                    minio_object_path = await upload_aggregated_json(user_id, task_id, parsing_task.taskName)
 
-                # Send message to json_to_sheet queue
-                await send_message_to_queue(QUEUES.JSON_TO_SHEET, {
-                    "userId": user_id,
-                    "taskId": task_id,
-                    "filePath": minio_object_path,
-                })
+                    # Mark task as completed
+                    await update_parsing_task(task_id, {
+                        "jsonFilePath": minio_object_path,
+                    })
 
-                # Clean up the aggregated JSON file
-                await cleanup_files([os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.json")])
-                logger.info(f"Task {task_id} completed and forwarded to json_to_sheet queue.")
+                    # Send message to json_to_sheet queue
+                    await send_message_to_queue(QUEUES.JSON_TO_SHEET, {
+                        "userId": user_id,
+                        "taskId": task_id,
+                        "filePath": minio_object_path,
+                    })
 
-        # Cleanup JSON file (outside lock)
-        await cleanup_files([json_file_path])
+                    # Clean up the aggregated JSON file
+                    await cleanup_files([os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.json")])
+                    logger.info(f"Task {task_id} completed and forwarded to json_to_sheet queue.")
 
-        logger.info(f"Processed file {file_path} for task {task_id}")
+            # Cleanup JSON file (outside lock)
+            await cleanup_files([json_file_path])
 
-    except Exception as e:
-        logger.error(f"Error processing message: {e}")
-        await message.nack(requeue=False)
+            logger.info(f"Processed file {file_path} for task {task_id}")
+
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id):
     """Worker function processing messages from a shared queue."""
