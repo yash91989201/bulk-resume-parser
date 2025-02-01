@@ -35,10 +35,6 @@ async def process_message(message: AbstractIncomingMessage):
 
         # Fetch the latest task status
         parsing_task = await fetch_parsing_task(task_id)
-        if parsing_task.taskStatus in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
-            logger.info(f"Task {task_id} is {parsing_task.taskStatus}, skipping.")
-            await message.ack()
-            return
 
         # Download the aggregated JSON file
         json_file_path = await download_json_file(file_path)
@@ -60,7 +56,6 @@ async def process_message(message: AbstractIncomingMessage):
         await cleanup_files([json_file_path, excel_file_path])
 
         logger.info(f"Task {task_id} completed and Excel file uploaded to MinIO.")
-        await message.ack()
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")

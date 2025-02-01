@@ -49,11 +49,6 @@ async def process_message(message: AbstractIncomingMessage):
         async with task_locks[task_id]:
             # Fetch the latest task status under lock
             parsing_task = await fetch_parsing_task(task_id)
-            if parsing_task.taskStatus in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
-                logger.info(f"Task {task_id} is {parsing_task.taskStatus}, skipping.")
-                await message.ack()
-                await cleanup_files([json_file_path])
-                return
 
             # Append data to the JSON file on disk
             await append_to_json_file(parsing_task.taskName, extracted_data)
@@ -67,6 +62,11 @@ async def process_message(message: AbstractIncomingMessage):
                 # Upload aggregated JSON to MinIO
                 minio_object_path = await upload_aggregated_json(user_id, task_id, parsing_task.taskName)
 
+                # Mark task as completed
+                await update_parsing_task(task_id, {
+                    "jsonFilePath": minio_object_path,
+                })
+
                 # Send message to json_to_sheet queue
                 await send_message_to_queue(QUEUES.JSON_TO_SHEET, {
                     "userId": user_id,
@@ -74,22 +74,13 @@ async def process_message(message: AbstractIncomingMessage):
                     "filePath": minio_object_path,
                 })
 
-                # Mark task as completed
-                await update_parsing_task(task_id, {
-                    "taskStatus": TaskStatus.COMPLETED.value,
-                    "jsonFilePath": minio_object_path,
-                })
-
                 # Clean up the aggregated JSON file
                 await cleanup_files([os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.json")])
                 logger.info(f"Task {task_id} completed and forwarded to json_to_sheet queue.")
-            elif parsing_task.taskStatus != TaskStatus.AGGREGATING:
-                await update_parsing_task(task_id, {"taskStatus": TaskStatus.AGGREGATING.value})
 
         # Cleanup JSON file (outside lock)
         await cleanup_files([json_file_path])
 
-        await message.ack()
         logger.info(f"Processed file {file_path} for task {task_id}")
 
     except Exception as e:
@@ -142,10 +133,16 @@ async def graceful_shutdown(signal):
     """Handle shutdown signal."""
     logger.info(f"Received {signal.name}. Shutting down...")
     shutdown_event.set()
+    await asyncio.sleep(5)
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    [task.cancel() for task in tasks]
+
+    logger.info("Cancelled pending tasks")
 
 async def main():
     """Main application setup."""
     os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
+
     await start_message_consumer()
 
 if __name__ == "__main__":

@@ -51,7 +51,6 @@ async def process_message(message):
         await cleanup_files([img_file_path, txt_file_path])
 
         logger.info("Processing completed successfully.")
-        await message.ack()
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")

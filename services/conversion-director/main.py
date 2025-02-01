@@ -53,8 +53,6 @@ async def process_message(message:AbstractIncomingMessage):
         else:
             logging.info("No parseable files to perform conversion")
 
-        await message.ack()
-
     except Exception as e:
         logging.error(f"Error processing message: {e}")
         await message.nack(requeue=False)

@@ -24,7 +24,7 @@ class SERVICE_CONFIG:
     # no of workers spawned to process message from rabbit mq
     WORKER_COUNT = int(os.getenv("WORKER_COUNT",25))
     # no of messages a single worker can process while waiting for an I/O process to complete
-    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",10))
+    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",5))
     # size of the local task queue
     QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",25))
     # no of retries while calling gemini api for data extraction

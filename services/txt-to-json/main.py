@@ -80,7 +80,6 @@ async def process_message(message: AbstractIncomingMessage):
             await cleanup_files([local_path, json_path])
 
             logger.info(f"Completed task {task_id}")
-            await message.ack()
 
         except Exception as e:
             logger.error(f"Failed processing message: {str(e)}")

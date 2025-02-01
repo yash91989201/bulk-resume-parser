@@ -69,7 +69,6 @@ def extract_pdf_to_txt_file(pdf_file_path:str)-> str:
         return txt_file_path
     return txt_file_path
 
-
 async def upload_txt_file(  user_id: str, task_id: str, txt_file_path:str) -> str:
     """
     Uploads a .txt file to MinIO.

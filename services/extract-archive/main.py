@@ -64,8 +64,6 @@ async def process_message(message: AbstractIncomingMessage):
 
             logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
 
-            await message.ack()
-
         except json.JSONDecodeError as decode_error:
             logger.error(f"Failed to decode JSON message: {message_body}. Error: {decode_error}")
             await message.nack(requeue=False)
