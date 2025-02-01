@@ -10,6 +10,7 @@ import {
   createParseableFiles,
   getBucketFilesInfo,
   MAX_FILE_SIZE_S3_ENDPOINT,
+  formatFileSize,
 } from "@/lib/utils";
 import { api } from "@/trpc/react";
 // SCHEMAS
@@ -135,7 +136,8 @@ export const ParsingTaskForm = () => {
           </CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
             Upload files to start a new parsing task. Ensure the total file size
-            does not exceed {MAX_FILE_SIZE_S3_ENDPOINT} MB.
+            does not exceed&nbsp;
+            {formatFileSize(MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024)}.
           </CardDescription>
         </CardHeader>
         <CardContent>

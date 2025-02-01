@@ -15,7 +15,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const MAX_FILE_SIZE_NEXTJS_ROUTE = 4;
-export const MAX_FILE_SIZE_S3_ENDPOINT = 512;
+export const MAX_FILE_SIZE_S3_ENDPOINT = 1024;
 export const FILE_NUMBER_LIMIT = 10;
 
 export const getBucketFilePrefix = (contentType: string) => {
