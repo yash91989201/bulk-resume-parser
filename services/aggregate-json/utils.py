@@ -5,9 +5,14 @@ from typing import List, Dict, Optional
 from minio import Minio
 import aio_pika
 import aiohttp
+import aiofiles
+import asyncio
+import orjson
 from config import MINIO_CONFIG, RABBITMQ_CONFIG, MINIO_BUCKETS, SERVICE_CONFIG
 from dataclasses import dataclass
 from enum import Enum
+from collections import defaultdict
+
 
 # Logging Configuration
 logging.basicConfig(
@@ -110,24 +115,56 @@ async def download_json_file(file_path: str) -> str:
     minio_client.fget_object(MINIO_BUCKETS.PROCESSED_JSON_FILES, file_path, local_file_path)
     return local_file_path
 
-async def append_to_json_file(task_name:str, data: Dict):
-    """
-    Appends data to a JSON file on disk. Creates the file if it doesn't exist.
+file_locks = defaultdict(asyncio.Lock)
+async def append_to_json_file(task_name: str, data: Dict):
+        """Appends data to a JSON file safely with locking and async I/O."""
+        
+        json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
 
-    Args:
-        task_id: The task ID.
-        data: The data to append.
-    """
-    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
-    if os.path.exists(json_file_path):
-        with open(json_file_path, "r") as json_file:
-            existing_data = json.load(json_file)
-        existing_data.append(data)
-    else:
-        existing_data = [data]
+        async with file_locks[json_file_path]:  # Lock per file
+            try:
+                existing_data = []
 
-    with open(json_file_path, "w") as json_file:
-        json.dump(existing_data, json_file)
+                # Use aiofiles for async file operations
+                try:
+                    async with aiofiles.open(json_file_path, "r") as f:
+                        content = await f.read()
+                        if content:
+                            existing_data = json.loads(content)
+                except FileNotFoundError:
+                    pass  # File doesn't exist, start fresh
+
+                # Append data
+                existing_data.append(data)
+
+                json_data = orjson.dumps(existing_data)
+
+                # Write updated JSON
+                async with aiofiles.open(json_file_path, "wb") as f:  # Write in binary mode for performance
+                    await f.write(json_data)
+
+            except Exception as e:
+                print(f"Error writing to {json_file_path}: {e}")
+
+
+# async def append_to_json_file(task_name:str, data: Dict):
+#     """
+#     Appends data to a JSON file on disk. Creates the file if it doesn't exist.
+#
+#     Args:
+#         task_id: The task ID.
+#         data: The data to append.
+#     """
+#     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
+#     if os.path.exists(json_file_path):
+#         with open(json_file_path, "r") as json_file:
+#             existing_data = json.load(json_file)
+#         existing_data.append(data)
+#     else:
+#         existing_data = [data]
+#
+#     with open(json_file_path, "w") as json_file:
+#         json.dump(existing_data, json_file)
 
 async def upload_aggregated_json( user_id: str, task_id:str, task_name:str) -> str:
     """

@@ -6,11 +6,11 @@ load_dotenv()
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/processed-json-files"
     # Number of workers spawned to process messages from RabbitMQ
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 2500))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 50))
     # Size of the local task queue
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE", 5000))
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE", 100))
     # Number of messages to fetch from RabbitMQ queue
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 2500))
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 50))
 
 class RABBITMQ_CONFIG:
     URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672")
