@@ -25,8 +25,10 @@ async def shutdown(signal):
     logger.info(f"Received {signal.name}, shutting down...")
     shutdown_event.set()
     await asyncio.sleep(1)
+
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
     [task.cancel() for task in tasks]
+
     logger.info("Cancelled pending tasks")
 
 async def process_message(message: AbstractIncomingMessage):
@@ -78,9 +80,11 @@ async def process_message(message: AbstractIncomingMessage):
             await cleanup_files([local_path, json_path])
 
             logger.info(f"Completed task {task_id}")
+            await message.ack()
 
         except Exception as e:
             logger.error(f"Failed processing message: {str(e)}")
+            await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id, semaphore):
     """

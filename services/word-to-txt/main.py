@@ -140,9 +140,12 @@ async def graceful_shutdown(signal):
         signal: The signal received.
     """
     logger.info(f"Received {signal.name}. Initiating shutdown...")
-    shutdown_event.set()  # Signal all components to stop
-    logger.info("Application is shutting down. Waiting for tasks to finish...")
+    shutdown_event.set()
+    await asyncio.sleep(5)
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    [task.cancel() for task in tasks]
 
+    logger.info("Cancelled pending tasks")
 
 async def main():
     """

@@ -59,8 +59,8 @@ async def process_message(message: AbstractIncomingMessage):
         # Cleanup temporary files
         await cleanup_files([json_file_path, excel_file_path])
 
-        await message.ack()
         logger.info(f"Task {task_id} completed and Excel file uploaded to MinIO.")
+        await message.ack()
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
@@ -112,6 +112,12 @@ async def graceful_shutdown(signal):
     """Handle shutdown signal."""
     logger.info(f"Received {signal.name}. Shutting down...")
     shutdown_event.set()
+    await asyncio.sleep(5)
+
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    [task.cancel() for task in tasks]
+
+    logger.info("Cancelled pending tasks")
 
 async def main():
     """Main application setup."""

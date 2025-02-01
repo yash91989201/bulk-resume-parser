@@ -64,12 +64,17 @@ async def process_message(message: AbstractIncomingMessage):
 
             logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
 
+            await message.ack()
+
         except json.JSONDecodeError as decode_error:
             logger.error(f"Failed to decode JSON message: {message_body}. Error: {decode_error}")
+            await message.nack(requeue=False)
         except ValueError as value_error:
             logger.error(f"Task processing error: {value_error}")
+            await message.nack(requeue=False)
         except Exception as general_error:
             logger.exception(f"Task processing failed: {general_error}")
+            await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id):
     """
@@ -144,7 +149,12 @@ async def graceful_shutdown(signal):
     logger.info(f"Received {signal.name}. Initiating shutdown...")
     # Signal all components to stop
     shutdown_event.set()  
-    logger.info("Application is shutting down. Waiting for tasks to finish...")
+    await asyncio.sleep(5)
+
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    [task.cancel() for task in tasks]
+
+    logger.info("Cancelled pending tasks")
 
 
 async def main():
