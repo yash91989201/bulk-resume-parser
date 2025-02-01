@@ -19,18 +19,20 @@ class RABBITMQ_CONFIG:
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/processed-json-files"
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL","gemini-2.0-flash-exp")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL","gemini-1.5-flash")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY","")
     # no of workers spawned to process message from rabbit mq
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT",15))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",25))
     # no of messages a single worker can process while waiting for an I/O process to complete
-    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",5))
+    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",10))
     # size of the local task queue
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",15))
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",25))
     # no of retries while calling gemini api for data extraction
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", 5))
     # no of messages to fetch from rabbitmq queue 
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 15))
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 25))
 
 class QUEUES:
     TXT_TO_JSON = "txt_to_json_queue"
     JSON_TO_SHEET = "json_to_sheet_queue"
+    AGGREGATE_JSON = "aggregate_json_queue"

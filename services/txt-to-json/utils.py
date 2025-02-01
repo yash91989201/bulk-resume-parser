@@ -5,8 +5,7 @@ import logging
 import aio_pika
 from minio import Minio
 from typing import List
-from google.generativeai import GenerativeModel, configure, GenerationConfig
-from config import MINIO_BUCKETS, RABBITMQ_CONFIG, MINIO_CONFIG, SERVICE_CONFIG
+from config import MINIO_BUCKETS, RABBITMQ_CONFIG, MINIO_CONFIG
 
 # Configure logging
 logging.basicConfig(
@@ -54,7 +53,7 @@ async def cleanup_files(file_paths: List[str]):
     """
     for file_path in file_paths:
         try:
-            await asyncio.to_thread(os.remove, file_path)  # Run `os.remove` in a thread
+            await asyncio.to_thread(os.remove, file_path)
             logger.info(f"Deleted temporary file: {file_path}")
         except FileNotFoundError:
             logger.warning(f"File not found: {file_path}")

@@ -68,7 +68,7 @@ async def process_message(message: AbstractIncomingMessage):
             # Upload result
             minio_object_path = await upload_json_file(user_id, task_id, json_file_path=json_path)
 
-            await send_message_to_queue(queue_name=QUEUES.JSON_TO_SHEET, message={
+            await send_message_to_queue(queue_name=QUEUES.AGGREGATE_JSON, message={
                 "userId": user_id,
                 "taskId": task_id,
                 "filePath": minio_object_path
@@ -145,9 +145,6 @@ async def main():
     """
     # Initialize directories
     os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
-    
-    # Initialize Redis
-    await resume_data_extractor.init_api_keys()
     
     # Start consumer
     await start_message_consumer()
