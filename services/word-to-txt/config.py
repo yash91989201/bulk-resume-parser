@@ -6,11 +6,11 @@ load_dotenv()
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/word-to-txt"
     # no of workers spawned to process message from rabbit mq
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT",25))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",15))
     # size of the local task queue
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",25))
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",30))
     # no of messages to fetch from rabbitmq queue 
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 25))
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 30))
 
 class MINIO_CONFIG:
     ENDPOINT = os.getenv("S3_ENDPOINT","localhost:9000") 
