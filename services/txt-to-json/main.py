@@ -35,55 +35,56 @@ async def process_message(message: AbstractIncomingMessage):
     """
     Process a message from RabbitMQ.
     """
-    async with message.process():
-        try:
-            msg_data = json.loads(message.body)
-            user_id = msg_data["userId"]
-            task_id = msg_data["taskId"]
-            file_path = msg_data["filePath"]
+    try:
+        msg_data = json.loads(message.body)
+        user_id = msg_data["userId"]
+        task_id = msg_data["taskId"]
+        file_path = msg_data["filePath"]
 
-            logger.info(f"Processing task {task_id} for user {user_id}")
+        logger.info(f"Processing task {task_id} for user {user_id}")
 
-            # Download file
-            local_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
-            await download_file(
-                MINIO_BUCKETS.PROCESSED_TXT_FILES,
-                file_path,
-                local_path
-            )
+        # Download file
+        local_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+        await download_file(
+            MINIO_BUCKETS.PROCESSED_TXT_FILES,
+            file_path,
+            local_path
+        )
 
-            # Process content
-            with open(local_path, "r") as f:
-                content = f.read()
+        # Process content
+        with open(local_path, "r") as f:
+            content = f.read()
 
-            extracted_data = await resume_data_extractor.extract_data(content)
-            logger.info(f"extract_data {extracted_data}")
+        extracted_data = await resume_data_extractor.extract_data(content)
+        logger.info(f"extract_data {extracted_data}")
 
-            # Construct upload path for JSON file
-            json_file = f"{user_id}/{task_id}/{os.path.splitext(os.path.basename(file_path))[0]}.json"
-            json_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(json_file))
+        # Construct upload path for JSON file
+        json_file = f"{user_id}/{task_id}/{os.path.splitext(os.path.basename(file_path))[0]}.json"
+        json_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(json_file))
                 
-            # Write JSON content
-            with open(json_path, "w") as f:
-                json.dump(extracted_data, f)
+        # Write JSON content
+        with open(json_path, "w") as f:
+            json.dump(extracted_data, f)
 
-            # Upload result
-            minio_object_path = await upload_json_file(user_id, task_id, json_file_path=json_path)
+        # Upload result
+        minio_object_path = await upload_json_file(user_id, task_id, json_file_path=json_path)
 
-            await send_message_to_queue(queue_name=QUEUES.AGGREGATE_JSON, message={
-                "userId": user_id,
-                "taskId": task_id,
-                "filePath": minio_object_path
-            })
+        await send_message_to_queue(queue_name=QUEUES.AGGREGATE_JSON, message={
+            "userId": user_id,
+            "taskId": task_id,
+            "filePath": minio_object_path
+        })
 
-            # Cleanup
-            await cleanup_files([local_path, json_path])
+        # Cleanup
+        await cleanup_files([local_path, json_path])
 
-            logger.info(f"Completed task {task_id}")
+        logger.info(f"Completed task {task_id}")
 
-        except Exception as e:
-            logger.error(f"Failed processing message: {str(e)}")
-            await message.nack(requeue=False)
+        await message.ack()
+
+    except Exception as e:
+        logger.error(f"Failed processing message: {str(e)}")
+        await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id, semaphore):
     """

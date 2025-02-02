@@ -26,53 +26,53 @@ async def process_message(message: AbstractIncomingMessage):
     Args:
         message: The RabbitMQ message instance.
     """
-    async with message.process():
-        message_body = message.body.decode()
-        logger.info(f"Received message: {message_body}")
+    message_body = message.body.decode()
+    logger.info(f"Received message: {message_body}")
 
-        try:
-            data = json.loads(message_body)
-            user_id = data.get("userId")
-            task_id = data.get("taskId")
+    try:
+        data = json.loads(message_body)
+        user_id = data.get("userId")
+        task_id = data.get("taskId")
 
-            if not user_id or not task_id:
-                raise ValueError("Missing 'userId' or 'taskId' in the queue message.")
+        if not user_id or not task_id:
+            raise ValueError("Missing 'userId' or 'taskId' in the queue message.")
 
-            logger.info(f"Task {task_id}: Starting extraction")
+        logger.info(f"Task {task_id}: Starting extraction")
 
-            # Step 1: Download all archive files in task 
-            archive_files = await download_archive_files(user_id, task_id)
+        # Step 1: Download all archive files in task 
+        archive_files = await download_archive_files(user_id, task_id)
 
-            # Step 2: Extract contents of archive files 
-            extraction_directory = await extract_archive_files(task_id, archive_files)
+        # Step 2: Extract contents of archive files 
+        extraction_directory = await extract_archive_files(task_id, archive_files)
 
-            # Step 3: Upload extracted files to minio by extension type 
-            total_files, invalid_files, parseable_files = await upload_by_file_type(
-                extraction_directory, user_id, task_id
-            )
+        # Step 3: Upload extracted files to minio by extension type 
+        total_files, invalid_files, parseable_files = await upload_by_file_type(
+            extraction_directory, user_id, task_id
+        )
 
-            # Step 4: Update task file count in db 
-            await update_task_file_count(task_id, total_files, invalid_files)
+        # Step 4: Update task file count in db 
+        await update_task_file_count(task_id, total_files, invalid_files)
 
-            # Step 5: Insert parseable files in db
-            await insert_parseable_files(parseable_files)
+        # Step 5: Insert parseable files in db
+        await insert_parseable_files(parseable_files)
 
-            # Step 6: Clean up temporary files
-            await cleanup_files(archive_files)
-            await cleanup_dir(extraction_directory)
-            await cleanup_dir(os.path.join(SERVICE_CONFIG.DOWNLOAD_DIRECTORY,user_id, task_id))
+        # Step 6: Clean up temporary files
+        await cleanup_files(archive_files)
+        await cleanup_dir(extraction_directory)
+        await cleanup_dir(os.path.join(SERVICE_CONFIG.DOWNLOAD_DIRECTORY,user_id, task_id))
 
-            logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
+        logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
+        await message.ack()
 
-        except json.JSONDecodeError as decode_error:
-            logger.error(f"Failed to decode JSON message: {message_body}. Error: {decode_error}")
-            await message.nack(requeue=False)
-        except ValueError as value_error:
-            logger.error(f"Task processing error: {value_error}")
-            await message.nack(requeue=False)
-        except Exception as general_error:
-            logger.exception(f"Task processing failed: {general_error}")
-            await message.nack(requeue=False)
+    except json.JSONDecodeError as decode_error:
+        logger.error(f"Failed to decode JSON message: {message_body}. Error: {decode_error}")
+        await message.nack(requeue=False)
+    except ValueError as value_error:
+        logger.error(f"Task processing error: {value_error}")
+        await message.nack(requeue=False)
+    except Exception as general_error:
+        logger.exception(f"Task processing failed: {general_error}")
+        await message.nack(requeue=False)
 
 async def worker(task_queue, worker_id):
     """
