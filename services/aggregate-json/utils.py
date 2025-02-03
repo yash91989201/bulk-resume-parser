@@ -117,7 +117,7 @@ async def append_to_json_file(task_name: str, data: Dict):
     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
     
     # Use JSON Lines format (one JSON object per line)
-    async with aiofiles.open(json_file_path, "ab") as f:
+    async with aiofiles.open(json_file_path, "a") as f:
         line = orjson.dumps(data).decode() + "\n"
         await f.write(line)
 
