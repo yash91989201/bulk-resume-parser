@@ -13,37 +13,41 @@ class ResumeDataExtractor:
 
     async def extract_data(self, text_content: str) -> Dict:
         """Extract resume data with rate limit handling"""
+
+        # Remove empty new lines from the text 
+        sanitized_text_content = "\n".join([line for line in text_content.splitlines() if line.strip()])
+
         prompt = f"""
-        Extract the following details from the given resume text and return a valid JSON object:
+        Extract the following details from the given resume text and return a strictly valid JSON object with no extra text:
 
         {{
-            "full_name": "Full name of the candidate",
-            "email": "Candidate's email address (validate format)",
-            "phone_number": "All valid phone numbers (exactly 10 digits after extracting country code, separated by commas, otherwise null)",
-            "country_code": "Country code(s) for extracted phone numbers prefixed with + sign (if applicable, otherwise null)",
-            "invalid_number": "List of phone numbers that are less or more than 10 digits after extracting country code, separated by commas (if any, otherwise null)"
+            "full_name": "Full name of the candidate (if available, otherwise null)",
+            "email": "Candidate's email address in a valid format, with all unwanted or non-printable characters (e.g., null bytes) removed (if not available, then null)",
+            "phone_number": "Comma-separated list of valid phone numbers. A valid phone number is exactly 10 digits after removing country code and any spaces, dashes, or special characters (if no valid phone numbers are found, then null)",
+            "country_code": "Comma-separated list of unique country codes (each prefixed with a + sign) extracted from the phone numbers (if none, then null)",
+            "invalid_number": "Comma-separated list of phone numbers that do not have exactly 10 digits after extracting any country code (if none, then null)"
         }}
 
-        **Extraction Rules:**
-        1. Return `null` for any missing or unavailable fields.
-        2. Ensure the output follows a **strict JSON format** without any extra text.
-        3. Validate the email format to ensure correctness.
-        4. If a phone number is present:
-           - Extract the country code if it starts with `+` (e.g., `+91`, `+971`).
-           - Remove spaces, dashes, and special characters from the remaining number.
-           - If the cleaned number is **exactly 10 digits**, add it to `phone_number` (comma-separated for multiple values).
-           - If it is **less or more than 10 digits after removing the country code**, add it to `invalid_number` (comma-separated for multiple values).
-           - Extract and list all unique country codes found in `country_code` (comma-separated).
-
-        **Special Cases:**
-        - If multiple valid phone numbers are found, store them in `phone_number` as a **comma-separated list**.
-        - If any valid phone number is found, `phone_number` must **not** be null.
-        - If all numbers are invalid, set `phone_number` to `null` and store invalid ones in `invalid_number`.
-        - If country codes exist, list them in `country_code` as a **comma-separated list**.
+        **Rules & Requirements:**
+        1. **Output Format:** The output must be a strict JSON object and contain only the JSON without any extra text.
+        2. **Field Defaults:** If a field is unavailable or missing in the resume text, return its value as `null`.
+        3. **Email Field:**
+           - Validate the email format (e.g., ensure it contains an '@' and a domain).
+           - Remove any unwanted or non-printable characters (such as null bytes) so that the email appears clean.
+        4. **Phone Number Extraction:**
+           - Identify phone numbers including optional country codes (e.g., numbers starting with a '+' sign).
+           - For each phone number:
+             - If a country code is present (a '+' followed by digits), extract it and clean it.
+             - Remove all spaces, dashes, and special characters from the remaining number.
+             - If the cleaned number has exactly 10 digits, consider it valid and include it in the `phone_number` field.
+             - If the cleaned number does not have exactly 10 digits after extracting the country code, include it in the `invalid_number` field.
+           - List all unique country codes found in a comma-separated format under `country_code`.
+        5. **Consistency:** If multiple valid phone numbers are found, the `phone_number` field must list them separated by commas. If all phone numbers are invalid, set `phone_number` to `null` and list all in `invalid_number`.
 
         **Resume Text:**  
+
         ```  
-        {text_content}  
+        {sanitized_text_content}  
         ```      
         """ 
 

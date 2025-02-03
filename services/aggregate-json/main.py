@@ -42,7 +42,7 @@ async def distributed_lock(lock_key: str, lock_timeout: int = 300):
             break  # Exit after processing with lock
         else:
             logger.info(f"Lock {lock_key} is already acquired. Waiting...")
-            await asyncio.sleep(3)  # Wait before retrying
+            await asyncio.sleep(5)  # Wait before retrying
 
 async def process_message(message: AbstractIncomingMessage):
     """Processes a single RabbitMQ message."""
