@@ -1,4 +1,5 @@
 import json
+import orjson
 import logging
 import os
 from typing import List, Dict, Optional
@@ -6,13 +7,9 @@ from minio import Minio
 import aio_pika
 import aiohttp
 import aiofiles
-import asyncio
-import orjson
 from config import MINIO_CONFIG, RABBITMQ_CONFIG, MINIO_BUCKETS, SERVICE_CONFIG
 from dataclasses import dataclass
 from enum import Enum
-from collections import defaultdict
-
 
 # Logging Configuration
 logging.basicConfig(
@@ -115,72 +112,34 @@ async def download_json_file(file_path: str) -> str:
     minio_client.fget_object(MINIO_BUCKETS.PROCESSED_JSON_FILES, file_path, local_file_path)
     return local_file_path
 
-file_locks = defaultdict(asyncio.Lock)
 async def append_to_json_file(task_name: str, data: Dict):
-        """Appends data to a JSON file safely with locking and async I/O."""
-        
-        json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
-
-        async with file_locks[json_file_path]:  # Lock per file
-            try:
-                existing_data = []
-
-                # Use aiofiles for async file operations
-                try:
-                    async with aiofiles.open(json_file_path, "r") as f:
-                        content = await f.read()
-                        if content:
-                            existing_data = json.loads(content)
-                except FileNotFoundError:
-                    pass  # File doesn't exist, start fresh
-
-                # Append data
-                existing_data.append(data)
-
-                json_data = orjson.dumps(existing_data)
-
-                # Write updated JSON
-                async with aiofiles.open(json_file_path, "wb") as f:  # Write in binary mode for performance
-                    await f.write(json_data)
-
-            except Exception as e:
-                print(f"Error writing to {json_file_path}: {e}")
-
-
-# async def append_to_json_file(task_name:str, data: Dict):
-#     """
-#     Appends data to a JSON file on disk. Creates the file if it doesn't exist.
-#
-#     Args:
-#         task_id: The task ID.
-#         data: The data to append.
-#     """
-#     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
-#     if os.path.exists(json_file_path):
-#         with open(json_file_path, "r") as json_file:
-#             existing_data = json.load(json_file)
-#         existing_data.append(data)
-#     else:
-#         existing_data = [data]
-#
-#     with open(json_file_path, "w") as json_file:
-#         json.dump(existing_data, json_file)
-
-async def upload_aggregated_json( user_id: str, task_id:str, task_name:str) -> str:
-    """
-    Uploads the aggregated JSON file to MinIO.
-
-    Args:
-        task_id: The task ID.
-        user_id: The user ID.
-
-    Returns:
-        The MinIO object path of the uploaded file.
-    """
+    """Appends data as a new JSON line without locks."""
     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
+    
+    # Use JSON Lines format (one JSON object per line)
+    async with aiofiles.open(json_file_path, "a") as f:
+        line = orjson.dumps(data).decode() + "\n"
+        await f.write(line)
+
+async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> str:
+    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
+    
+    # Read JSON Lines and convert to JSON array
+    async with aiofiles.open(json_file_path, "r") as f:
+        lines = await f.readlines()
+        data = [orjson.loads(line) for line in lines]
+    
+    # Upload as JSON array (or keep as JSON Lines if supported downstream)
+    temp_json_path = json_file_path + "-upload.json"
+    async with aiofiles.open(temp_json_path, "wb") as f:
+        await f.write(orjson.dumps(data))
+    
     minio_object_path = os.path.join(user_id, task_id, f"{task_name}-result.json")
-    minio_client.fput_object(MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, json_file_path)
+    minio_client.fput_object(MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, temp_json_path)
+    
+    await cleanup_files([temp_json_path])
     return minio_object_path
+
 
 async def cleanup_files(file_paths: List[str]):
     """
