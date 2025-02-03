@@ -1,4 +1,5 @@
 import json
+import asyncio
 import orjson
 import logging
 import os
@@ -99,17 +100,16 @@ async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
                 return False
 
 async def download_json_file(file_path: str) -> str:
-    """
-    Downloads a JSON file from MinIO to the local directory.
-
-    Args:
-        file_path: The path of the file in MinIO.
-
-    Returns:
-        The local file path.
-    """
     local_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
-    minio_client.fget_object(MINIO_BUCKETS.PROCESSED_JSON_FILES, file_path, local_file_path)
+    loop = asyncio.get_running_loop()
+    # Offload the blocking call to a thread.
+    await loop.run_in_executor(
+        None, 
+        minio_client.fget_object,
+        MINIO_BUCKETS.PROCESSED_JSON_FILES,
+        file_path,
+        local_file_path
+    )
     return local_file_path
 
 async def append_to_json_file(task_name: str, data: Dict):
@@ -124,30 +124,38 @@ async def append_to_json_file(task_name: str, data: Dict):
 async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> str:
     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
     
-    # Read JSON Lines and convert to JSON array
+    # Read JSON Lines asynchronously.
     async with aiofiles.open(json_file_path, "r") as f:
         lines = await f.readlines()
-        data = [orjson.loads(line) for line in lines]
+    # Process JSON using a fast library.
+    data = [orjson.loads(line) for line in lines]
     
-    # Upload as JSON array (or keep as JSON Lines if supported downstream)
+    # Write out the aggregated JSON as a temporary file.
     temp_json_path = json_file_path + "-upload.json"
     async with aiofiles.open(temp_json_path, "wb") as f:
         await f.write(orjson.dumps(data))
     
+    # Offload the blocking upload to a thread.
     minio_object_path = os.path.join(user_id, task_id, f"{task_name}-result.json")
-    minio_client.fput_object(MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, temp_json_path)
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        None,
+        minio_client.fput_object,
+        MINIO_BUCKETS.AGGREGATED_RESULTS,
+        minio_object_path,
+        temp_json_path
+    )
     
+    # Cleanup the temporary file.
     await cleanup_files([temp_json_path])
     return minio_object_path
 
 
 async def cleanup_files(file_paths: List[str]):
-    """
-    Deletes temporary files asynchronously.
-    """
+    loop = asyncio.get_running_loop()
     for file_path in file_paths:
         try:
-            os.remove(file_path)
+            await loop.run_in_executor(None, os.remove, file_path)
             logger.info(f"Deleted temporary file: {file_path}")
         except FileNotFoundError:
             logger.warning(f"File not found: {file_path}")
