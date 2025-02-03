@@ -171,6 +171,7 @@ export const ACCEPTED_FILE_TYPES = {
     "application/zip",
     "application/vnd.rar",
     "application/x-rar",
+    "application/x-zip-compressed",
     "application/x-7z-compressed",
     "application/x-rar-compressed",
   ],
