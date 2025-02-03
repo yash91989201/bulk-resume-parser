@@ -39,6 +39,28 @@ export function formatFileSize(bytes?: number) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
+export function formatSecondsToMinutes(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  const milliseconds = Math.round((seconds - Math.floor(seconds)) * 1000);
+
+  let timeStr = "";
+
+  if (minutes > 0) {
+    timeStr += `${minutes}m `;
+  }
+
+  if (remainingSeconds > 0 || minutes === 0) {
+    timeStr += `${Math.floor(remainingSeconds)}s `;
+  }
+
+  if (milliseconds > 0 && minutes === 0 && Math.floor(remainingSeconds) === 0) {
+    timeStr += `${milliseconds}ms`;
+  }
+
+  return timeStr;
+}
+
 /**
  *
  * @param files array of files
@@ -117,18 +139,50 @@ export const uploadToBucket = ({
 }: {
   file: File;
   presignedUrl: string;
-  progressCallback: (progress: number) => void;
+  progressCallback: (progress: number, estimatedTimeRemaining?: number) => void;
 }): Promise<Response> => {
-  return new Promise((resolve, reject) => {
+  return new Promise<Response>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", presignedUrl, true);
     xhr.setRequestHeader("Content-Type", file.type);
     xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
 
-    xhr.upload.onprogress = (event) => {
+    let startTime: number | null = null;
+    let loadedPrevious = 0;
+    let timePrevious: number | null = null;
+
+    xhr.upload.onprogress = (event: ProgressEvent) => {
       if (event.lengthComputable) {
-        const progress = (event.loaded / event.total) * 100;
-        progressCallback(progress);
+        const progress: number = (event.loaded / event.total) * 100;
+        const currentTime: number = Date.now();
+
+        if (startTime === null) {
+          startTime = currentTime;
+          loadedPrevious = event.loaded;
+          timePrevious = currentTime;
+          progressCallback(progress); // Initial callback
+          return; // Not enough data for estimate yet
+        }
+
+        const timeElapsed: number = currentTime - startTime;
+        let uploadSpeed: number = (event.loaded / timeElapsed) * 1000; // bytes per second
+
+        // More accurate estimate using a rolling average
+        const timeDiff: number = currentTime - timePrevious!;
+        const loadedDiff: number = event.loaded - loadedPrevious;
+        if (timeDiff > 0) {
+          const currentSpeed: number = (loadedDiff / timeDiff) * 1000;
+          uploadSpeed = (uploadSpeed + currentSpeed) / 2;
+        }
+
+        timePrevious = currentTime;
+        loadedPrevious = event.loaded;
+
+        const bytesRemaining: number = event.total - event.loaded;
+        const estimatedTimeRemaining: number | undefined =
+          uploadSpeed > 0 ? bytesRemaining / uploadSpeed : undefined;
+
+        progressCallback(progress, estimatedTimeRemaining);
       }
     };
 
@@ -182,7 +236,11 @@ export const uploadTaskFiles = async ({
 }: {
   files: File[];
   bucketFilesInfo: BucketFileInfoType[];
-  progressCallback: (fileIndex: number, progress: number) => void;
+  progressCallback: (
+    fileIndex: number,
+    progress: number,
+    estimatedTimeRemaining?: number,
+  ) => void;
 }) => {
   const uploadPromises = bucketFilesInfo.map((bucketFileInfo, index) => {
     const file = files.find(
@@ -198,7 +256,8 @@ export const uploadTaskFiles = async ({
     return uploadToBucket({
       file,
       presignedUrl: bucketFileInfo.presignedUrl,
-      progressCallback: (progress) => progressCallback(index, progress),
+      progressCallback: (progress, estimatedTimeRemaining) =>
+        progressCallback(index, progress, estimatedTimeRemaining),
     });
   });
 

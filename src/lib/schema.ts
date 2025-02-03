@@ -41,6 +41,7 @@ export const ParsingTaskFormSchema = z.object({
           z.literal("ERROR"),
           z.number().min(0).max(100),
         ]),
+        estimatedTimeRemaining: z.number().optional(),
       }),
     )
     .min(1, "At least one file is required")

@@ -58,6 +58,7 @@ export const ParsingTaskForm = () => {
 
   const { control, formState, handleSubmit, setValue, watch, reset } =
     parsingTaskForm;
+
   const taskFilesState = watch("taskFilesState");
 
   const onSubmit: SubmitHandler<ParsingTaskFormType> = async (formData) => {
@@ -96,8 +97,12 @@ export const ParsingTaskForm = () => {
       await uploadTaskFiles({
         bucketFilesInfo,
         files: taskFilesState.map((file) => file.file),
-        progressCallback: (fileIndex, progress) => {
+        progressCallback: (fileIndex, progress, estimatedTimeRemaining) => {
           setValue(`taskFilesState.${fileIndex}.progress`, progress);
+          setValue(
+            `taskFilesState.${fileIndex}.estimatedTimeRemaining`,
+            estimatedTimeRemaining,
+          );
         },
       });
 
@@ -173,18 +178,24 @@ export const ParsingTaskForm = () => {
                     </FormLabel>
                     <FormControl>
                       <MultiFileDropzone
-                        value={taskFilesState.map(({ file, progress }) => ({
-                          file,
-                          key: file.name,
-                          progress,
-                        }))}
+                        value={taskFilesState.map(
+                          ({ file, progress, estimatedTimeRemaining }) => ({
+                            file,
+                            key: file.name,
+                            progress,
+                            estimatedTimeRemaining,
+                          }),
+                        )}
                         onChange={(fileStates) => {
                           setValue(
                             "taskFilesState",
-                            fileStates.map(({ file, progress }) => ({
-                              file,
-                              progress: progress || "PENDING",
-                            })),
+                            fileStates.map(
+                              ({ file, progress, estimatedTimeRemaining }) => ({
+                                file,
+                                progress: progress || "PENDING",
+                                estimatedTimeRemaining,
+                              }),
+                            ),
                           );
                         }}
                         dropzoneOptions={{
