@@ -146,8 +146,6 @@ async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> 
         temp_json_path
     )
     
-    # Cleanup the temporary file.
-    await cleanup_files([temp_json_path])
     return minio_object_path
 
 
