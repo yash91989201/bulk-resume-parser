@@ -323,7 +323,7 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
             folder_name = get_minio_folder(file_extension)
 
             # Create MinIO object path
-            filename_in_bucket = f"{cuid2_generator()}-{file_name}"
+            filename_in_bucket = f"{cuid2_generator()}{file_extension}"
             minio_object_path = os.path.join(user_id, task_id, folder_name, filename_in_bucket)
 
             try:
