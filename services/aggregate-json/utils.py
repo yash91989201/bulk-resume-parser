@@ -66,11 +66,13 @@ class ParsingTask:
 async def fetch_parsing_task(task_id: str) -> ParsingTask:
     """Fetches the parsing task status from the API and returns a ParsingTask object."""
     url = f"http://localhost:3000/api/parsing-task?taskId={task_id}"
+    logger.info(f"Fetching parsing task from API for task ID: {task_id}")
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:
                 data = await response.json()
                 parsing_task = data["data"]["parsingTask"]
+                logger.debug(f"Successfully fetched parsing task: {parsing_task}")
                 return ParsingTask(
                     id=parsing_task["id"],
                     taskName=parsing_task["taskName"],
@@ -84,6 +86,7 @@ async def fetch_parsing_task(task_id: str) -> ParsingTask:
                     userId=parsing_task["userId"],
                 )
             else:
+                logger.error(f"Failed to fetch parsing task status: {response.status}")
                 raise Exception(f"Failed to fetch parsing task status: {response.status}")
 
 async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
@@ -92,11 +95,14 @@ async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
     Returns True if successful, False otherwise.
     """
     url = f"http://localhost:3000/api/parsing-task?taskId={task_id}"
+    logger.info(f"Updating parsing task for task ID: {task_id}")
     async with aiohttp.ClientSession() as session:
         async with session.patch(url, json=updated_parsing_task) as response:
             if response.status == 200:
+                logger.debug(f"Successfully updated parsing task: {task_id}")
                 return True
             else:
+                logger.error(f"Failed to update parsing task: {response.status}")
                 return False
 
 async def download_json_file(file_path: str) -> str:
@@ -115,7 +121,7 @@ async def download_json_file(file_path: str) -> str:
 async def append_to_json_file(task_name: str, data: Dict):
     """Appends data as a new JSON line without locks."""
     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
-    
+
     # Use JSON Lines format (one JSON object per line)
     async with aiofiles.open(json_file_path, "a") as f:
         line = orjson.dumps(data).decode() + "\n"
@@ -123,7 +129,7 @@ async def append_to_json_file(task_name: str, data: Dict):
 
 async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> str:
     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
-    
+    logger.info(f"Uploading aggregated JSON for task: {task_name}")
     # Read JSON Lines asynchronously.
     async with aiofiles.open(json_file_path, "r") as f:
         lines = await f.readlines()
@@ -145,7 +151,7 @@ async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> 
         minio_object_path,
         temp_json_path
     )
-    
+
     return minio_object_path
 
 async def cleanup_files(file_paths: List[str]):
@@ -177,7 +183,7 @@ async def send_message_to_queue(queue_name: str, message: Dict):
             ),
             routing_key=queue_name,
         )
-        logger.info(f"Message sent to {queue_name}: {message}")
+        logger.debug(f"Message sent to {queue_name}: {message}")
 
 def should_update_processed_file_count(total_files: int, processed_files: int) -> bool:
     if total_files == 0 or processed_files == 0:

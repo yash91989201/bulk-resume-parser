@@ -43,12 +43,15 @@ async def distributed_lock(lock_key: str, lock_timeout: int = 300):
         while not acquired:
             acquired = await redis_client.set(lock_key, "locked", ex=lock_timeout, nx=True)
             if acquired:
+                logger.info(f"Acquired distributed lock for key: {lock_key}")
                 yield
             else:
+                logger.debug(f"Waiting to acquire lock for key: {lock_key}")
                 await asyncio.sleep(5)
     finally:
         if acquired:
             await redis_client.delete(lock_key)
+            logger.info(f"Released distributed lock for key: {lock_key}")
 
 async def process_message(message: AbstractIncomingMessage):
     """Processes a single RabbitMQ message."""
@@ -64,7 +67,7 @@ async def process_message(message: AbstractIncomingMessage):
         # Create a unique lock key per task to prevent concurrent file operations
         lock_key = f"lock:task:{task_id}"
         async with distributed_lock(lock_key):
-            # Download JSON file
+            logger.info(f"Downloading JSON file from path: {file_path}")
             json_file_path = await download_json_file(file_path)
 
             async with aiofiles.open(json_file_path, "r") as json_file:
@@ -89,6 +92,7 @@ async def process_message(message: AbstractIncomingMessage):
 
             # Finalize the task if all valid files have been processed
             if current_count == parsing_task.totalFiles - parsing_task.invalidFiles:
+                logger.info(f"Finalizing task {task_id} as all files have been processed")
                 # Upload aggregated JSON to MinIO
                 minio_object_path = await upload_aggregated_json(user_id, task_id, parsing_task.taskName)
 
@@ -116,16 +120,19 @@ async def process_message(message: AbstractIncomingMessage):
 
         await message.ack()
 
-    except Exception as _:
+    except Exception as e:
+        logger.error(f"Error processing message: {e}")
         await message.nack(requeue=False) 
 
 async def worker(task_queue, worker_id):
     while not shutdown_event.is_set():
         try:
             message = await task_queue.get()
+            logger.debug(f"Worker {worker_id} processing message")
             await process_message(message)
             task_queue.task_done()
         except asyncio.TimeoutError:
+            logger.debug(f"Worker {worker_id} timed out waiting for message")
             continue 
         except Exception as e:
             logger.error(f"Worker {worker_id} error: {e}")
