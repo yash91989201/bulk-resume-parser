@@ -6,7 +6,7 @@ load_dotenv()
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/processed-json-files"
     # Number of workers spawned to process messages from RabbitMQ
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 15))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 30))
     # Size of the local task queue
     QUEUE_SIZE = int(os.getenv("QUEUE_SIZE", 30))
     # Number of messages to fetch from RabbitMQ queue

@@ -1,16 +1,20 @@
 import json
 import asyncio
+import aiofiles
 import signal
 import os
+from typing import Dict
 import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
 from redis.asyncio import Redis
 from contextlib import asynccontextmanager
 from config import RABBITMQ_CONFIG, SERVICE_CONFIG, QUEUES
 from utils import (
+    ParsingTask,
     logger,
     download_json_file,
     fetch_parsing_task,
+    should_update_processed_file_count,
     update_parsing_task,
     append_to_json_file,
     upload_aggregated_json,
@@ -24,6 +28,14 @@ shutdown_event = asyncio.Event()
 # Create a global Redis connection (or create one per process as needed)
 redis_client = Redis.from_url("redis://localhost:6379", decode_responses=True)
 
+# Global dict to keep track of parsing task
+global_parsing_task:Dict[str, ParsingTask] = {}
+
+global_parsing_task_lock = asyncio.Lock()
+
+async def close_redis():
+    await redis_client.close()
+
 @asynccontextmanager
 async def distributed_lock(lock_key: str, lock_timeout: int = 300):
     """
@@ -31,18 +43,19 @@ async def distributed_lock(lock_key: str, lock_timeout: int = 300):
     Tries to set the lock with a timeout and yields control if successful.
     If the lock is already acquired, it waits until it becomes available.
     """
-    while True:
-        # Try to acquire the lock
-        # Using SET with NX (only set if not exists) and EX (expiration)
-        if await redis_client.set(lock_key, "locked", ex=lock_timeout, nx=True):
-            try:
+
+    acquired = False
+    try:
+        while not acquired:
+            acquired = await redis_client.set(lock_key, "locked", ex=lock_timeout, nx=True)
+            if acquired:
                 yield
-            finally:
-                await redis_client.delete(lock_key)
-            break  # Exit after processing with lock
-        else:
-            logger.info(f"Lock {lock_key} is already acquired. Waiting...")
-            await asyncio.sleep(5)  # Wait before retrying
+            else:
+                logger.info(f"Lock {lock_key} is already acquired. Retrying in 5s...")
+                await asyncio.sleep(5)
+    finally:
+        if acquired:
+            await redis_client.delete(lock_key)
 
 async def process_message(message: AbstractIncomingMessage):
     """Processes a single RabbitMQ message."""
@@ -68,24 +81,29 @@ async def process_message(message: AbstractIncomingMessage):
             json_file_path = await download_json_file(file_path)
 
             # Process JSON data
-            with open(json_file_path, "r") as json_file:
-                extracted_data = json.load(json_file)
+            async with aiofiles.open(json_file_path, "r") as json_file:
+                content = await json_file.read()
+                extracted_data = json.loads(content)
 
-            # Fetch the latest task status
-            parsing_task = await fetch_parsing_task(task_id)
+            async with global_parsing_task_lock:
+                if task_id in global_parsing_task and global_parsing_task[task_id].totalFiles != 0:
+                    parsing_task = global_parsing_task[task_id]
+                else:
+                    parsing_task = await fetch_parsing_task(task_id)
+                    global_parsing_task[task_id] = parsing_task
 
             # Append data to the JSON file on disk
             await append_to_json_file(parsing_task.taskName, extracted_data)
 
-            # Update processed files count
-            updated_processed_files = parsing_task.processedFiles + 1
-            await update_parsing_task(task_id, {"processedFiles": updated_processed_files})
+            # update the local processed file count
+            parsing_task.processedFiles += 1 
 
-            # Refetch the parsing task after updating
-            parsing_task = await fetch_parsing_task(task_id)
+            if should_update_processed_file_count(parsing_task.totalFiles, parsing_task.processedFiles):
+                await update_parsing_task(task_id, {"processedFiles": parsing_task.processedFiles})
+                global_parsing_task[task_id] = parsing_task
 
             # Finalize if all files processed
-            if updated_processed_files == parsing_task.totalFiles - parsing_task.invalidFiles:
+            if parsing_task.processedFiles == parsing_task.totalFiles - parsing_task.invalidFiles:
                 # Upload aggregated JSON to MinIO
                 minio_object_path = await upload_aggregated_json(user_id, task_id, parsing_task.taskName)
 
@@ -104,6 +122,10 @@ async def process_message(message: AbstractIncomingMessage):
                 # Clean up the aggregated JSON file
                 result_file = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{parsing_task.taskName}-result.json")
                 await cleanup_files([result_file])
+
+                # Remove the task entry from the global dictionary
+                global_parsing_task.pop(task_id, None)
+
                 logger.info(f"Task {task_id} completed and forwarded to json_to_sheet queue.")
 
             # Clean up the downloaded JSON file
@@ -119,18 +141,19 @@ async def process_message(message: AbstractIncomingMessage):
         await message.nack(requeue=False)  # Do not requeue failed messages
 
 async def worker(task_queue, worker_id):
-    """Worker function processing messages from a shared queue."""
     while not shutdown_event.is_set():
         try:
-            message = await task_queue.get()
-            logger.info(f"Worker {worker_id} processing message")
+            message = await asyncio.wait_for(task_queue.get(), timeout=10) 
             await process_message(message)
             task_queue.task_done()
+        except asyncio.TimeoutError:
+            continue  # Allow checking shutdown_event
         except asyncio.CancelledError:
             logger.info(f"Worker {worker_id} shutting down...")
             break
         except Exception as e:
             logger.error(f"Worker {worker_id} error: {e}")
+
 
 async def start_message_consumer():
     """Start consumer with a shared queue and multiple workers."""
@@ -168,6 +191,7 @@ async def graceful_shutdown(signal):
     logger.info(f"Received {signal.name}. Shutting down...")
     shutdown_event.set()
     await asyncio.sleep(5)  # Allow time for workers to finish
+    await close_redis()
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
     [task.cancel() for task in tasks]  # Cancel all pending tasks
     logger.info("Cancelled pending tasks")
@@ -181,13 +205,15 @@ if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(graceful_shutdown(s)))
+
+    logger.info("Starting RabbitMQ consumer...")
     try:
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(
-                sig, lambda s=sig: asyncio.create_task(graceful_shutdown(s))
-            )
-        logger.info("Starting RabbitMQ consumer...")
         loop.run_until_complete(main())
+    except Exception as e:
+        logger.error(f"Unhandled exception: {e}")
     finally:
+        loop.run_until_complete(graceful_shutdown(signal.SIGTERM))  # Ensure cleanup
         loop.close()
         logger.info("Consumer stopped.")
