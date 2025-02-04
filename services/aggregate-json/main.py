@@ -32,7 +32,7 @@ redis_client = Redis.from_url("redis://localhost:6379", decode_responses=True)
 global_parsing_task: Dict[str, ParsingTask] = {}
 
 @asynccontextmanager
-async def distributed_lock(lock_key: str, lock_timeout: int = 500):
+async def distributed_lock(lock_key: str, lock_timeout: int = 300):
     """
     Async context manager for a Redis-based distributed lock.
     Tries to set the lock with a timeout and yields control if successful.
@@ -64,8 +64,6 @@ async def process_message(message: AbstractIncomingMessage):
         # Create a unique lock key per task to prevent concurrent file operations
         lock_key = f"lock:task:{task_id}"
         async with distributed_lock(lock_key):
-            logger.info(f"Lock acquired for task {task_id}. Processing message...")
-
             # Download JSON file
             json_file_path = await download_json_file(file_path)
 
@@ -73,7 +71,7 @@ async def process_message(message: AbstractIncomingMessage):
                 content = await json_file.read()
                 extracted_data = json.loads(content)
 
-            if task_id in global_parsing_task and global_parsing_task[task_id].totalFiles != 0:
+            if task_id in global_parsing_task:
                 parsing_task = global_parsing_task[task_id]
             else:
                 parsing_task = await fetch_parsing_task(task_id)
@@ -114,7 +112,6 @@ async def process_message(message: AbstractIncomingMessage):
 
             # Clean up the downloaded JSON file
             await cleanup_files([json_file_path])
-
             logger.info(f"Processed file {file_path} for task {task_id}")
 
         await message.ack()
@@ -125,7 +122,8 @@ async def process_message(message: AbstractIncomingMessage):
 async def worker(task_queue, worker_id):
     while not shutdown_event.is_set():
         try:
-            await process_message(task_queue.get())
+            message = await task_queue.get()
+            await process_message(message)
             task_queue.task_done()
         except asyncio.TimeoutError:
             continue 
