@@ -1,4 +1,3 @@
-import os
 import json
 import logging
 import asyncio
@@ -135,8 +134,6 @@ async def main():
     """
     Main function to start the application.
     """
-    os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
-
     await start_message_consumer()
 
 if __name__ == "__main__":

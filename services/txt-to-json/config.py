@@ -17,7 +17,7 @@ class RABBITMQ_CONFIG:
     URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
 
 class SERVICE_CONFIG:
-    DOWNLOAD_DIR = "/tmp/processed-json-files"
+    DOWNLOAD_DIR = "/tmp/txt-to-json"
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL","gemini-1.5-flash")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY","")

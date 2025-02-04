@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class SERVICE_CONFIG:
-    DOWNLOAD_DIR = "/tmp/pdf-to-txt"
     # no of workers spawned to process message from rabbit mq
     WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))
     # size of the local task queue
