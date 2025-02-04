@@ -1,4 +1,6 @@
+import re
 import asyncio
+import subprocess
 import json
 import logging
 import os
@@ -239,6 +241,64 @@ async def extract_archive_files(task_id:str, archive_files: List[str]) -> str:
         patoolib.extract_archive(archive_file_path,outdir= extraction_directory)
 
     return extraction_directory
+
+
+def list_archive_files(archive_files_path:List[str])-> List[str]:
+    """
+    Lists the names of the top-level files from multiple archive files.
+
+    Parameters:
+        archive_paths (list): List of archive file paths.
+
+    Returns:
+        list: A combined list of top-level files from all archives.
+    """
+    top_level_files = []
+    
+    for archive_file_path in archive_files_path:
+        try:
+            # Run patool list command and capture the output
+            result = subprocess.run(
+                ["patool", "list", archive_file_path],  # Run patool as CLI command
+                capture_output=True,
+                text=True
+            )
+
+            # Extract filenames using regex (last column after date & time)
+            lines = result.stdout.splitlines()
+            for line in lines:
+                match = re.search(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}  (.+)", line)
+                if match:
+                    filename = match.group(1).strip()
+                    top_level_files.append(filename)
+
+        except Exception as e:
+            print(f"Error processing {archive_file_path}: {e}")
+
+    return top_level_files
+
+def task_files_count(archive_files_path:List[str])-> tuple[int, int]:
+    """
+    Counts total top-level files and determines invalid files based on allowed extensions.
+
+    Parameters:
+        archive_path (str): Path to the archive file.
+
+    Returns:
+        dict: A dictionary with 'total_files' and 'invalid_files' count.
+    """
+    valid_extensions = {".doc", ".docx", ".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+    
+    # Get the list of top-level files
+    top_level_files = list_archive_files(archive_files_path)
+
+    # Filter files (excluding directories)
+    files_only = [f for f in top_level_files if '.' in f]
+
+    # Count valid files
+    valid_files = [f for f in files_only if any(f.lower().endswith(ext) for ext in valid_extensions)]
+
+    return len(files_only), len(files_only) - len(valid_files)
 
 async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: str) -> tuple[int, int, List[ParseableFile]]:
     """
