@@ -81,6 +81,9 @@ async def process_message(message: AbstractIncomingMessage):
             updated_processed_files = parsing_task.processedFiles + 1
             await update_parsing_task(task_id, {"processedFiles": updated_processed_files})
 
+            # Refetch the parsing task after updating
+            parsing_task = await fetch_parsing_task(task_id)
+
             # Finalize if all files processed
             if updated_processed_files == parsing_task.totalFiles - parsing_task.invalidFiles:
                 # Upload aggregated JSON to MinIO
