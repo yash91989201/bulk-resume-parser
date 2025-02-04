@@ -5,6 +5,7 @@ load_dotenv()
 
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/aggregate-json"
+    REDIS_URL = "redis://localhost:6379"
     # Number of workers spawned to process messages from RabbitMQ
     WORKER_COUNT = int(os.getenv("WORKER_COUNT", 50))
     # Size of the local task queue

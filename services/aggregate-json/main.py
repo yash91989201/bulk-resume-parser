@@ -26,7 +26,7 @@ from utils import (
 shutdown_event = asyncio.Event()
 
 # Create a global Redis connection (or create one per process as needed)
-redis_client = Redis.from_url("redis://localhost:6379", decode_responses=True)
+redis_client = Redis.from_url(SERVICE_CONFIG.REDIS_URL, decode_responses=True)
 
 # Global dict to keep track of parsing tasks
 global_parsing_task: Dict[str, ParsingTask] = {}
