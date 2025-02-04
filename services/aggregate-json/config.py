@@ -4,13 +4,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class SERVICE_CONFIG:
-    DOWNLOAD_DIR = "/tmp/processed-json-files"
+    DOWNLOAD_DIR = "/tmp/aggregate-json"
     # Number of workers spawned to process messages from RabbitMQ
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 30))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 50))
     # Size of the local task queue
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE", 30))
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE", 150))
     # Number of messages to fetch from RabbitMQ queue
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 30))
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 150))
 
 class RABBITMQ_CONFIG:
     URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672")

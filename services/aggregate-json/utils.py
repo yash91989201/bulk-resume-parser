@@ -148,7 +148,6 @@ async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> 
     
     return minio_object_path
 
-
 async def cleanup_files(file_paths: List[str]):
     loop = asyncio.get_running_loop()
     for file_path in file_paths:
@@ -189,4 +188,5 @@ def should_update_processed_file_count(total_files: int, processed_files: int) -
 
     # Check if the number of processed files is a multiple of the batch amount
     # OR if all files have been processed
-    return (processed_files > 0 and processed_files % batch_amount == 0) or processed_files == total_files
+    should_update = (processed_files > 0 and processed_files % batch_amount == 0) or processed_files == total_files
+    return should_update
