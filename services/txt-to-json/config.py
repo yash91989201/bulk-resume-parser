@@ -22,15 +22,15 @@ class SERVICE_CONFIG:
     GEMINI_MODEL = os.getenv("GEMINI_MODEL","gemini-1.5-flash")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY","")
     # no of workers spawned to process message from rabbit mq
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT",15))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",50))
     # no of messages a single worker can process while waiting for an I/O process to complete
-    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",3))
+    INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",5))
     # size of the local task queue
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",30))
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",200))
     # no of retries while calling gemini api for data extraction
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", 5))
     # no of messages to fetch from rabbitmq queue 
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 30))
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 200))
 
 class QUEUES:
     TXT_TO_JSON = "txt_to_json_queue"

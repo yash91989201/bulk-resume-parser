@@ -6,11 +6,11 @@ load_dotenv()
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/img-to-txt"
     # no of workers spawned to process message from rabbit mq
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT",15))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",50))
     # size of the local task queue
-    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",30))
+    QUEUE_SIZE = int(os.getenv("QUEUE_SIZE",100))
     # no of messages to fetch from rabbitmq queue 
-    CONCURRENCY = int(os.getenv("CONCURRENCY", 30))
+    CONCURRENCY = int(os.getenv("CONCURRENCY", 100))
 
 class RABBITMQ_CONFIG:
     URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")

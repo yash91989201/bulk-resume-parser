@@ -14,6 +14,9 @@ class ResumeDataExtractor:
     async def extract_data(self, text_content: str) -> Dict:
         """Extract resume data with rate limit handling"""
 
+        if len(text_content) == 0:
+            return self.empty_response()
+
         # Remove empty new lines from the text 
         sanitized_text_content = "\n".join([line for line in text_content.splitlines() if line.strip()])
 
@@ -70,7 +73,7 @@ class ResumeDataExtractor:
                 )
 
                 if not response.text:
-                    raise ValueError("Empty Gemini response")
+                    return self.empty_response()
 
                 return self.validate_response(response.text)
 
@@ -97,6 +100,15 @@ class ResumeDataExtractor:
         except json.JSONDecodeError:
             logger.error("Invalid JSON response")
             raise
+
+    def empty_response(self):
+        return {
+            "full_name": None,
+            "email": None,
+            "phone_number": None,
+            "country_code": None,
+            "invalid_number": None 
+        }
 
 
 resume_data_extractor = ResumeDataExtractor(
