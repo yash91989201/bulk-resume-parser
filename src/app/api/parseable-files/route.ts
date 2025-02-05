@@ -53,6 +53,16 @@ export const POST = async (req: NextRequest) => {
     }
 
     const parseableFiles = reqJsonValidation.data.parseableFiles;
+    if (parseableFiles.length == 0) {
+      return NextResponse.json(
+        {
+          status: "FAILED",
+          message: "No parseable files provided",
+        },
+        { status: 422 },
+      );
+    }
+
     const parseableFilesInsertQuery = await db
       .insert(parseableFileTable)
       .values(parseableFiles);
