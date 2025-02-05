@@ -1,4 +1,3 @@
-import re
 import asyncio
 import subprocess
 import json
@@ -13,7 +12,7 @@ import logging
 import mimetypes
 from minio.error import S3Error
 from enum import Enum
-from typing import Callable, List
+from typing import Callable, Dict, List
 from minio import Minio
 from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, QUEUES, RABBITMQ_CONFIG
 from dataclasses import dataclass
@@ -242,40 +241,38 @@ async def extract_archive_files(task_id:str, archive_files: List[str]) -> str:
 
     return extraction_directory
 
-
-def list_archive_files(archive_files_path:List[str])-> List[str]:
+def list_archive_files(archive_files_path: List[str]) -> List[str]:
     """
     Lists the names of the top-level files from multiple archive files.
 
     Parameters:
-        archive_paths (list): List of archive file paths.
+        archive_files_path (list): List of archive file paths.
 
     Returns:
         list: A combined list of top-level files from all archives.
     """
-    top_level_files = []
-    
+    all_top_level_files = []
+
     for archive_file_path in archive_files_path:
         try:
             # Run patool list command and capture the output
             result = subprocess.run(
                 ["patool", "list", archive_file_path],  # Run patool as CLI command
                 capture_output=True,
-                text=True
+                text=True,
+                check=True  
             )
 
             # Extract filenames using regex (last column after date & time)
-            lines = result.stdout.splitlines()
-            for line in lines:
-                match = re.search(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}  (.+)", line)
-                if match:
-                    filename = match.group(1).strip()
-                    top_level_files.append(filename)
+            archive_files = result.stdout.splitlines()
+            all_top_level_files.extend(archive_files)
 
-        except Exception as e:
+        except subprocess.CalledProcessError as e:
             print(f"Error processing {archive_file_path}: {e}")
+        except Exception as e:
+            print(f"Unexpected error processing {archive_file_path}: {e}")
 
-    return top_level_files
+    return all_top_level_files
 
 def task_files_count(archive_files_path:List[str])-> tuple[int, int]:
     """
@@ -300,7 +297,7 @@ def task_files_count(archive_files_path:List[str])-> tuple[int, int]:
 
     return len(files_only), len(files_only) - len(valid_files)
 
-async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: str) -> tuple[int, int, List[ParseableFile]]:
+async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: str) -> tuple[int, int, List[ParseableFile], List[dict]]:
     """
     Processes extracted files and uploads them to MinIO according to their file type.
 
@@ -310,11 +307,12 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
         task_id: The task ID.
 
     Returns:
-        Tuple of (total_files, invalid_files, parseable_files).
+        Tuple of (total_files, invalid_files, parseable_files, queue_messages).
     """
     total_files = 0
     invalid_files = 0
     parseable_files: List[ParseableFile] = []
+    queue_messages: List[dict] = []
 
     for root_directory, _, file_names in os.walk(extraction_directory):
         for file_name in file_names:
@@ -338,10 +336,15 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
                 queue_name = get_queue_name_by_file_extension(file_extension)
 
                 queue_message = {
-                    "userId": user_id,
-                    "taskId": task_id,
-                    "filePath": minio_object_path,
+                    "queueName": queue_name,
+                    "message": {
+                        "userId": user_id,
+                        "taskId": task_id,
+                        "filePath": minio_object_path,
+                    },
                 }
+
+                queue_messages.append(queue_message)
 
                 parseable_files.append(
                     ParseableFile(
@@ -356,8 +359,6 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
                     )
                 )
 
-                await send_message_to_queue(queue_name, queue_message)
-
             except S3Error as e:
                 invalid_files += 1
                 print(f"MinIO error occurred while uploading {file_name}: {e}")
@@ -365,7 +366,7 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
                 invalid_files += 1
                 print(f"Unexpected error occurred while processing {file_name}: {e}")
 
-    return total_files, invalid_files, parseable_files
+    return total_files, invalid_files, parseable_files, queue_messages
 
 async def cleanup_files(file_paths: List[str]):
     """

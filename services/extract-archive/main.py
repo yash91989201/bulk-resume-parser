@@ -12,7 +12,7 @@ from utils import (
     extract_archive_files,
     insert_parseable_files,
     get_rabbit_mq_connection,
-    task_files_count,
+    send_message_to_queue,
     update_task_file_count,
     upload_by_file_type
 )
@@ -43,20 +43,20 @@ async def process_message(message: AbstractIncomingMessage):
         # Step 1: Download all archive files in task 
         archive_files = await download_archive_files(user_id, task_id)
 
-        # Step 2: Update task initial file count in db
-        total_files, invalid_files = task_files_count(archive_files)  
-        await update_task_file_count(task_id, total_files, invalid_files)
-
-        # Step 3: Extract contents of archive files 
+        # Step 2: Extract contents of archive files 
         extraction_directory = await extract_archive_files(task_id, archive_files)
 
-        # Step 4: Upload extracted files to minio by extension type 
-        total_files, invalid_files, parseable_files = await upload_by_file_type(
+        # Step 3: Upload extracted files to minio by extension type 
+        total_files, invalid_files, parseable_files, queue_messages = await upload_by_file_type(
             extraction_directory, user_id, task_id
         )
 
-        # Step 5: Update task file count in db 
+        # Step 4: Update task file count in db 
         await update_task_file_count(task_id, total_files, invalid_files)
+
+        # Step 5: Send message to respective queue for further processing
+        for queue_message in queue_messages:
+            await send_message_to_queue(queue_name= queue_message["queueName"], message= queue_message["message"])
 
         # Step 6: Insert parseable files in db
         await insert_parseable_files(parseable_files)
