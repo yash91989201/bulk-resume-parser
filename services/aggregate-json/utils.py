@@ -118,9 +118,9 @@ async def download_json_file(file_path: str) -> str:
     )
     return local_file_path
 
-async def append_to_json_file(task_name: str, data: Dict):
+async def append_to_json_file(task_id: str, data: Dict):
     """Appends data as a new JSON line without locks."""
-    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
+    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_id}-result.json")
 
     # Use JSON Lines format (one JSON object per line)
     async with aiofiles.open(json_file_path, "a") as f:
@@ -128,7 +128,7 @@ async def append_to_json_file(task_name: str, data: Dict):
         await f.write(line)
 
 async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> str:
-    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_name}-result.json")
+    json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_id}-result.json")
     logger.info(f"Uploading aggregated JSON for task: {task_name}")
     # Read JSON Lines asynchronously.
     async with aiofiles.open(json_file_path, "r") as f:
@@ -143,6 +143,7 @@ async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> 
     
     # Offload the blocking upload to a thread.
     minio_object_path = os.path.join(user_id, task_id, f"{task_name}-result.json")
+
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
         None,

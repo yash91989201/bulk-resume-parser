@@ -10,6 +10,8 @@ class SERVICE_CONFIG:
     WORKER_COUNT = int(os.getenv("WORKER_COUNT", 50))
     # Size of the local task queue
     QUEUE_SIZE = int(os.getenv("QUEUE_SIZE", 150))
+    # Size of the writer queue for aggregating data
+    WRITER_QUEUE_SIZE = int(os.getenv("WRITER_QUEUE_SIZE", 250))
     # Number of messages to fetch from RabbitMQ queue
     CONCURRENCY = int(os.getenv("CONCURRENCY", 150))
 
