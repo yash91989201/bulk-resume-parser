@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates
 
-COPY /certificates/cert.pem /usr/local/share/ca-certificates/glitchtip.pem
+COPY /data/coolify/certs/glitchtip.bulk-resume-parser.yashraj-jaiswal.site/cert.pem /usr/local/share/ca-certificates/glitchtip.pem
 
 RUN update-ca-certificates
 
