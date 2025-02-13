@@ -2,6 +2,12 @@ FROM oven/bun AS base
 
 WORKDIR /app
 
+RUN apk add --no-cache ca-certificates
+
+COPY /certificates/cert.pem /usr/local/share/ca-certificates/glitchtip.pem
+
+RUN update-ca-certificates
+
 COPY package.json .
 
 RUN bun install
