@@ -6,6 +6,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 import "@/env.js";
 // TYPES
 import type { NextConfig } from "next";
+import { env } from "@/env.js";
 
 const nextConfig = {
   output: "standalone",
@@ -20,7 +21,7 @@ export default withSentryConfig(nextConfig, {
 
   org: "bulk-resume-parser",
   project: "bulk-resume-parser",
-  sentryUrl: "https://glitchtip.bulk-resume-parser.yashraj-jaiswal.site/",
+  sentryUrl: env.SENTRY_URL,
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,

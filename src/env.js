@@ -41,6 +41,8 @@ export const env = createEnv({
       .transform((val) => val.toLowerCase() === "true")
       .optional(),
     RABBITMQ_URL: z.string(),
+    SENTRY_DSN: z.string(),
+    SENTRY_URL: z.string(),
   },
 
   /**
@@ -51,6 +53,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string(),
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string(),
+    NEXT_PUBLIC_SENTRY_DSN: z.string(),
   },
 
   /**
@@ -69,9 +72,12 @@ export const env = createEnv({
     S3_SECRET_KEY: process.env.S3_SECRET_KEY,
     S3_USE_SSL: process.env.S3_USE_SSL,
     RABBITMQ_URL: process.env.RABBITMQ_URL,
+    SENTRY_URL: process.env.SENTRY_URL,
+    SENTRY_DSN: process.env.SENTRY_DSN,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
