@@ -31,13 +31,15 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
   PYTHONUNBUFFERED=1
 
-# Install only runtime dependencies
+# Install runtime dependencies and tools for RAR extraction
 RUN apt-get update && apt-get install -y --no-install-recommends \
   libssl-dev \
   libffi-dev \
   libxml2 \
   libxslt1.1 \
   zlib1g \
+  unrar \  # Add unrar for RAR extraction \
+  p7zip-full \  # Add p7zip for 7z and RAR extraction \
   && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
@@ -54,4 +56,4 @@ ENV PATH=/root/.local/bin:$PATH
 RUN mkdir -p /tmp/extracted
 
 # Run the service
-ENTRYPOINT ["python", "-u", "main.py"]
+ENTRYPOINT ["/bin/sh","-c", "python3 main.py 2>&1 | tee /var/log/bulk-resume-parser/services/extract-archive.log"]
