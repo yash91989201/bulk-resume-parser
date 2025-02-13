@@ -99,6 +99,7 @@ export async function checkFileExistsInBucket({
   try {
     await s3Client.statObject(bucketName, fileName);
   } catch (error) {
+    console.log(error);
     return false;
   }
   return true;
