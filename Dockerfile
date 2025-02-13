@@ -2,7 +2,7 @@ FROM oven/bun:debian AS base
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl
 
 RUN openssl s_client -connect glitchtip.bulk-resume-parser.yashraj-jaiswal.site:443 -showcerts </dev/null 2>/dev/null | sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' > /usr/local/share/ca-certificates/glitchtip.pem
 
