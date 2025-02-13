@@ -4,17 +4,17 @@ WORKDIR /app
 
 COPY package.json .
 
-ARG DATABASE_URL
-ARG NODE_ENV
-ARG BETTER_AUTH_URL
-ARG BETTER_AUTH_SECRET="aXNjaGVzdGRhcmtibGFua2V0YnJ1c2hiaWxsdGh1bWJza3lidXJpZWRtYXR0ZXJibGk="
-ARG BETTER_AUTH_TRUSTED_ORIGINS="https://bulk-resume-parser.yashraj-jaiswal.site"
-ARG S3_ENDPOINT="minio.bulk-resume-parser.yashraj-jaiswal.site"
-ARG S3_ACCESS_KEY
-ARG S3_SECRET_KEY
-ARG S3_USE_SSL
-ARG RABBITMQ_URL
-ARG NEXT_PUBLIC_BETTER_AUTH_URL
+# ARG DATABASE_URL
+# ARG NODE_ENV
+# ARG BETTER_AUTH_URL
+# ARG BETTER_AUTH_SECRET="aXNjaGVzdGRhcmtibGFua2V0YnJ1c2hiaWxsdGh1bWJza3lidXJpZWRtYXR0ZXJibGk="
+# ARG BETTER_AUTH_TRUSTED_ORIGINS="https://bulk-resume-parser.yashraj-jaiswal.site"
+# ARG S3_ENDPOINT="minio.bulk-resume-parser.yashraj-jaiswal.site"
+# ARG S3_ACCESS_KEY
+# ARG S3_SECRET_KEY
+# ARG S3_USE_SSL
+# ARG RABBITMQ_URL
+# ARG NEXT_PUBLIC_BETTER_AUTH_URL
 
 RUN bun install
 
