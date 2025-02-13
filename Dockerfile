@@ -26,4 +26,4 @@ COPY --from=base /app/public ./public
 
 EXPOSE 3000
 
-CMD ["bun", "server.js", "2>&1", "|", "tee", "/var/log/bulk-resume-parser/app.log"]
+ENTRYPOINT ["/bin/sh","-c", "bun server.js 2>&1 | tee /var/log/bulk-resume-parser/app.log"]
