@@ -12,9 +12,9 @@ import logging
 import mimetypes
 from minio.error import S3Error
 from enum import Enum
-from typing import Callable, Dict, List
+from typing import Callable, List
 from minio import Minio
-from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, QUEUES, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, QUEUES
 from dataclasses import dataclass
 
 # Logging Configuration
@@ -78,7 +78,7 @@ minio_client = Minio(
 )
 
 async def get_rabbit_mq_connection():
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
 
     return connection
 
@@ -297,7 +297,7 @@ def task_files_count(archive_files_path:List[str])-> tuple[int, int]:
 
     return len(files_only), len(files_only) - len(valid_files)
 
-async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: str) -> tuple[int, int, List[ParseableFile], List[dict]]:
+async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: str) -> tuple[int, int, List[ParseableFile]]:
     """
     Processes extracted files and uploads them to MinIO according to their file type.
 
@@ -312,7 +312,6 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
     total_files = 0
     invalid_files = 0
     parseable_files: List[ParseableFile] = []
-    queue_messages: List[dict] = []
 
     for root_directory, _, file_names in os.walk(extraction_directory):
         for file_name in file_names:
@@ -333,18 +332,6 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
                     continue
 
                 total_files += 1
-                queue_name = get_queue_name_by_file_extension(file_extension)
-
-                queue_message = {
-                    "queueName": queue_name,
-                    "message": {
-                        "userId": user_id,
-                        "taskId": task_id,
-                        "filePath": minio_object_path,
-                    },
-                }
-
-                queue_messages.append(queue_message)
 
                 parseable_files.append(
                     ParseableFile(
@@ -366,7 +353,7 @@ async def upload_by_file_type(extraction_directory: str, user_id: str, task_id: 
                 invalid_files += 1
                 print(f"Unexpected error occurred while processing {file_name}: {e}")
 
-    return total_files, invalid_files, parseable_files, queue_messages
+    return total_files, invalid_files, parseable_files
 
 async def cleanup_files(file_paths: List[str]):
     """
@@ -403,25 +390,6 @@ async def cleanup_dir(extraction_directory: str):
         print(f"Permission denied: {extraction_directory}")
     except OSError as e:
         print(f"Error removing {extraction_directory}: {e}")
-
-def get_queue_name_by_file_extension(file_extension: str) -> str:
-    """
-    Returns the appropriate queue name based on the file extension.
-
-    Args:
-        file_extension: The file extension.
-
-    Returns:
-        The queue name.
-    """
-    if file_extension in [".doc", ".docx"]:
-        return QUEUES.WORD_TO_TXT
-    elif file_extension == ".pdf":
-        return QUEUES.PDF_TO_TXT
-    elif file_extension in [".jpg", ".jpeg", ".png", ".webp"]:
-        return QUEUES.IMG_TO_TXT
-    return ""
-
 
 def get_minio_folder(file_extension):
     """

@@ -8,7 +8,7 @@ import aio_pika
 import pytesseract
 import numpy as np
 from minio import Minio
-from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG
 
 pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
@@ -26,11 +26,6 @@ minio_client = Minio(
     secret_key=MINIO_CONFIG.SECRET_KEY,
     secure=MINIO_CONFIG.SECURE
 )
-
-async def get_rabbit_mq_connection():
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
-
-    return connection
 
 async def download_img_file(file_path: str) -> str:
     """
@@ -176,7 +171,7 @@ async def send_message_to_queue(queue_name:str, message:dict):
         message (dict): The message to send.
     """
     
-    connection = await get_rabbit_mq_connection()
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
 
     async with connection:
         channel = await connection.channel()

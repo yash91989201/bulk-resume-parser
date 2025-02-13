@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import signal
+import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
 from utils import (
     logger,
@@ -9,7 +10,6 @@ from utils import (
     convert_doc_to_docx,
     download_doc_file,
     extract_text_and_save,
-    get_rabbit_mq_connection,
     send_message_to_queue,
     upload_txt_file
 )
@@ -17,6 +17,8 @@ from config import SERVICE_CONFIG,  QUEUES
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
+
+conversion_semaphore = asyncio.Semaphore(SERVICE_CONFIG.DOC_TO_DOCX_CONVERSION_CONCURRENCY)
 
 async def process_message(message:AbstractIncomingMessage):
     """
@@ -40,13 +42,14 @@ async def process_message(message:AbstractIncomingMessage):
         doc_file_path = await download_doc_file(file_path)
 
         # Step 2: Convert .doc to .docx if necessary
-        doc_file_path = convert_doc_to_docx(doc_file_path)
+        async with conversion_semaphore:
+            doc_file_path = await convert_doc_to_docx(doc_file_path)
 
         # Step 3: Extract text from the file
         txt_file_path = await extract_text_and_save(doc_file_path, file_path)
 
-        # Step 4: Upload .txt file to MinIO
-        uploaded_file_path = await upload_txt_file(txt_file_path, user_id, task_id)
+        # Step 4: Upload txt file to MinIO
+        minio_file_path = await upload_txt_file(txt_file_path, user_id, task_id)
 
         # Step 5: Send message to text-to-json queue
         await send_message_to_queue(
@@ -54,7 +57,7 @@ async def process_message(message:AbstractIncomingMessage):
             message = {
                 "userId": user_id,
                 "taskId": task_id,
-                "filePath": uploaded_file_path,
+                "filePath": minio_file_path,
             })
 
         # Step 6: Cleanup temporary files
@@ -70,10 +73,6 @@ async def process_message(message:AbstractIncomingMessage):
 async def worker(task_queue, worker_id):
     """
     Worker function that processes messages from the task queue.
-
-    Args:
-        task_queue: The task queue.
-        worker_id: The worker ID.
     """
     while not shutdown_event.is_set():
         try:
@@ -83,16 +82,16 @@ async def worker(task_queue, worker_id):
             task_queue.task_done()
 
         except Exception as e:
-            logger.exception(f"Worker {worker_id} encountered an error: {e}")
-
+            logger.error(f"Worker {worker_id} encountered an error: {e}")
 
 async def start_message_consumer():
     """
     Initializes and starts the RabbitMQ message consumer with a worker pool.
     """
+    logger.info("Starting RabbitMQ consumer...")
     while not shutdown_event.is_set():
         try:
-            connection = await get_rabbit_mq_connection()
+            connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL) 
 
             async with connection:
                 channel = await connection.channel()
@@ -104,8 +103,8 @@ async def start_message_consumer():
                 queue = await channel.declare_queue(QUEUES.WORD_TO_TXT, durable=True)
 
                 # Task queue and worker pool
-                task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE)  
-                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(SERVICE_CONFIG.WORKER_COUNT)]
+                task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE) 
+                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(SERVICE_CONFIG.WORKER_COUNT)] 
 
                 async def enqueue_message(message):
                     await task_queue.put(message)
@@ -128,19 +127,15 @@ async def start_message_consumer():
                 await asyncio.gather(*workers, return_exceptions=True)
 
         except Exception as e:
-            logger.exception(f"Consumer error: {e}. Reconnecting in 5 seconds...")
+            logger.error(f"Consumer error: {e}. Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
-
 
 async def graceful_shutdown(signal):
     """
     Handles graceful shutdown on receiving a signal.
-
-    Args:
-        signal: The signal received.
     """
     logger.info(f"Received {signal.name}. Initiating shutdown...")
-    shutdown_event.set()
+    shutdown_event.set()  # Signal all components to stop
     await asyncio.sleep(5)
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
     [task.cancel() for task in tasks]
@@ -154,7 +149,6 @@ async def main():
     os.makedirs(SERVICE_CONFIG.DOWNLOAD_DIR, exist_ok=True)
     await start_message_consumer()
 
-
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -165,10 +159,9 @@ if __name__ == "__main__":
                 sig, lambda s=sig: asyncio.create_task(graceful_shutdown(s))
             )
 
-        logger.info("Starting RabbitMQ consumer...")
         loop.run_until_complete(main())
     except Exception as e:
-        logger.exception(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
     finally:
         logger.info("Consumer stopped. Exiting...")
         loop.close()

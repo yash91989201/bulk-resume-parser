@@ -4,7 +4,7 @@ import signal
 import os
 import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
-from config import RABBITMQ_CONFIG, SERVICE_CONFIG, QUEUES
+from config import SERVICE_CONFIG, QUEUES
 from utils import (
     logger,
     download_json_file,
@@ -77,7 +77,7 @@ async def start_message_consumer():
     """Start consumer with a shared queue and multiple workers."""
     while not shutdown_event.is_set():
         try:
-            connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
+            connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
             async with connection:
                 channel = await connection.channel()
                 await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY)

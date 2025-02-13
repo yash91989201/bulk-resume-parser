@@ -2,12 +2,12 @@ import asyncio
 import json
 import os
 import signal
+import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
 from config import SERVICE_CONFIG, MINIO_BUCKETS,  QUEUES
 import resume_data_extractor
 from resume_data_extractor import resume_data_extractor
 from utils import (
-    get_rabbitmq_connection,
     logger,
     cleanup_files, 
     download_file, 
@@ -110,8 +110,7 @@ async def start_message_consumer():
     """
     Start the RabbitMQ consumer.
     """
-    connection = await get_rabbitmq_connection()
-
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
     async with connection:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY)

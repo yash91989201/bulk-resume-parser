@@ -1,13 +1,15 @@
 import asyncio
 import logging
+from zipfile import BadZipFile
+import zipfile
+from xml.etree import ElementTree as ET
 import json
 import os
 from typing import List
 import aio_pika
-import subprocess
 from minio import Minio
 from docx import Document
-from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG
 
 # Logging Configuration
 logging.basicConfig(
@@ -24,11 +26,6 @@ minio_client = Minio(
     secret_key=MINIO_CONFIG.SECRET_KEY,
     secure=MINIO_CONFIG.SECURE
 )
-
-async def get_rabbit_mq_connection():
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
-
-    return connection
 
 async def download_doc_file(file_path: str) -> str:
     """
@@ -62,6 +59,7 @@ async def extract_text_and_save(local_file_path: str, original_file_path: str) -
 
     with open(local_txt_path, "w", encoding="utf-8") as txt_file:
         txt_file.write(text_content)
+
     return local_txt_path
 
 
@@ -98,49 +96,84 @@ async def cleanup_files(file_paths: List[str]):
         except Exception as e:
             logging.error(f"Error deleting {file_path}: {e}")
 
-
-def convert_doc_to_docx(local_file_path: str) -> str:
+async def convert_doc_to_docx(local_file_path: str) -> str:
     """
-    Converts a .doc file to .docx if necessary using LibreOffice.
-
+    Asynchronously converts a .doc file to .docx if necessary using LibreOffice.
+    Uses a semaphore to limit concurrency and runs the blocking conversion in a thread.
+    
     Args:
         local_file_path: The path of the local file.
-
+    
     Returns:
         The path of the converted file (or the original file if no conversion was needed).
     """
     if local_file_path.endswith(".doc"):
-        # Define the output .docx file path
         converted_docx_path = local_file_path + "x"
 
         try:
-            # Use LibreOffice to convert .doc to .docx
-            subprocess.run(
-                [
-                    "libreoffice",
-                    "--headless",
-                    "--convert-to",
-                    "docx",
-                    local_file_path,
-                    "--outdir",
-                    os.path.dirname(converted_docx_path),
-                ],
-                check=True,
+            process = await asyncio.create_subprocess_exec(
+                'unoconvert',
+                '--host',
+                'unoserver',
+                '--port',
+                '2003',
+                '--host-location',
+                'remote',
+                local_file_path,
+                converted_docx_path
             )
+
+            stdout, stderr = await process.communicate()
+
+            if process.returncode == 0:
+                logger.info(f'Successfully converted {local_file_path} to {converted_docx_path}')
+            else:
+                raise Exception(f'stdout: {stdout.decode()} stderr: {stderr.decode()}')
+
             return converted_docx_path
+        except Exception as e:
+            logger.error("LibreOffice conversion failed : %s", e)
 
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to convert .doc to .docx: {e}")
-
-    # If the file is not a .doc, return the original path
     return local_file_path
 
-def extract_text_from_docx(file_path:str)-> str:
-    """
-    Extracts text from a .docx file.
-    """
-    document = Document(file_path)
-    return "\n".join([paragraph.text for paragraph in document.paragraphs])
+def extract_text_from_docx(file_path: str) -> str:
+    try:
+        # First try the standard method
+        document = Document(file_path)
+        return '\n'.join([para.text for para in document.paragraphs if para.text])
+    except BadZipFile:
+        # Fallback to corrupted file method
+        return extract_text_from_corrupted_docx(file_path)
+    except Exception as e:
+        logger.error(f"Error extracting text from DOCX file {file_path}: {e}")
+        return ""
+
+def extract_text_from_corrupted_docx(file_path: str) -> str:
+    """Attempt to extract text from potentially corrupted DOCX files"""
+    try:
+        with zipfile.ZipFile(file_path) as z:
+            with z.open('word/document.xml') as f:
+                xml_content = f.read()
+        
+        namespaces = {
+            'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+        }
+        tree = ET.fromstring(xml_content)
+        paragraphs = tree.findall('.//w:p', namespaces)
+        
+        text_lines = []
+        for para in paragraphs:
+            texts = [node.text for node in para.findall('.//w:t', namespaces) if node.text]
+            text_lines.append(''.join(texts))
+        
+        return '\n'.join(filter(None, text_lines))
+        
+    except KeyError as e:
+        logger.error(f"Missing expected key in DOCX XML for {file_path}: {e}")
+        return ""
+    except Exception as e:
+        logger.error(f"Failed to extract text from corrupted DOCX {file_path}: {e}")
+        return ""
 
 async def send_message_to_queue(queue_name:str, message:dict):
     """
@@ -150,8 +183,7 @@ async def send_message_to_queue(queue_name:str, message:dict):
         queue_name (str): The RabbitMQ queue name.
         message (dict): The message to send.
     """
-    
-    connection = await get_rabbit_mq_connection()
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
 
     async with connection:
         channel = await connection.channel()

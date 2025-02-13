@@ -6,7 +6,7 @@ from typing import List
 import PyPDF2
 import aio_pika
 from minio import Minio
-from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, RABBITMQ_CONFIG
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG 
 
 # Logging Configuration
 logging.basicConfig(
@@ -23,10 +23,10 @@ minio_client = Minio(
     secure=MINIO_CONFIG.SECURE
 )
 
-async def get_rabbit_mq_connection():
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
-
-    return connection
+# async def get_rabbit_mq_connection():
+#     connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
+#
+#     return connection
 
 async def download_pdf_file(file_path:str)->str:
     """
@@ -110,7 +110,7 @@ async def send_message_to_queue(queue_name:str, message:dict):
         message (dict): The message to send.
     """
     
-    connection = await get_rabbit_mq_connection()
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
 
     async with connection:
         channel = await connection.channel()

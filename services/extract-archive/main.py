@@ -47,16 +47,21 @@ async def process_message(message: AbstractIncomingMessage):
         extraction_directory = await extract_archive_files(task_id, archive_files)
 
         # Step 3: Upload extracted files to minio by extension type 
-        total_files, invalid_files, parseable_files, queue_messages = await upload_by_file_type(
+        total_files, invalid_files, parseable_files = await upload_by_file_type(
             extraction_directory, user_id, task_id
         )
 
         # Step 4: Update task file count in db 
         await update_task_file_count(task_id, total_files, invalid_files)
 
-        # Step 5: Send message to respective queue for further processing
-        for queue_message in queue_messages:
-            await send_message_to_queue(queue_name= queue_message["queueName"], message= queue_message["message"])
+        # Step 5: Send message to conversion director 
+        await send_message_to_queue(
+                queue_name= QUEUES.CONVERSION_DIRECTOR, 
+                message= {
+                    "userId": user_id,
+                    "taskId": task_id,
+                }
+        )
 
         # Step 6: Insert parseable files in db
         await insert_parseable_files(parseable_files)

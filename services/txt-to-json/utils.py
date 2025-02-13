@@ -5,7 +5,7 @@ import logging
 import aio_pika
 from minio import Minio
 from typing import List
-from config import MINIO_BUCKETS, RABBITMQ_CONFIG, MINIO_CONFIG
+from config import MINIO_BUCKETS, MINIO_CONFIG, SERVICE_CONFIG
 
 # Configure logging
 logging.basicConfig(
@@ -62,19 +62,12 @@ async def cleanup_files(file_paths: List[str]):
         except Exception as e:
             logger.error(f"Error deleting {file_path}: {e}")
 
-async def get_rabbitmq_connection():
-    """
-    Get a connection to RabbitMQ.
-    """
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
-    logger.info("Connected to RabbitMQ")
-    return connection
-
 async def send_message_to_queue(queue_name: str, message: dict):
     """
     Send a message to a RabbitMQ queue.
     """
-    connection = await get_rabbitmq_connection()
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
+
     async with connection:
         channel = await connection.channel()
         await channel.default_exchange.publish(

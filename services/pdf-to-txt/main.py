@@ -3,13 +3,13 @@ import json
 import logging
 import asyncio
 import signal
+import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
 from utils import (
         logger,
         cleanup_files, 
         download_pdf_file, 
         extract_pdf_to_txt_file, 
-        get_rabbit_mq_connection, 
         send_message_to_queue, 
         upload_txt_file
 )
@@ -86,7 +86,7 @@ async def start_message_consumer():
     """
     while not shutdown_event.is_set():
         try:
-            connection = await get_rabbit_mq_connection()
+            connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
 
             async with connection:
                 channel = await connection.channel()

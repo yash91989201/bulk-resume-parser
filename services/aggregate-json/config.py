@@ -5,18 +5,16 @@ load_dotenv()
 
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/aggregate-json"
-    REDIS_URL = "redis://localhost:6379"
+    REDIS_URL = os.getenv("REDIS_URL","redis://localhost:6379")
+    RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672")
     # Number of workers spawned to process messages from RabbitMQ
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 50))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT", 25))
     # Size of the local task queue
     QUEUE_SIZE = int(os.getenv("QUEUE_SIZE", 150))
     # Size of the writer queue for aggregating data
     WRITER_QUEUE_SIZE = int(os.getenv("WRITER_QUEUE_SIZE", 250))
     # Number of messages to fetch from RabbitMQ queue
     CONCURRENCY = int(os.getenv("CONCURRENCY", 150))
-
-class RABBITMQ_CONFIG:
-    URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672")
 
 class MINIO_CONFIG:
     ENDPOINT = os.getenv("S3_ENDPOINT", "localhost:9000")

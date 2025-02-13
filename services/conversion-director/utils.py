@@ -5,7 +5,7 @@ from typing import List
 import aio_pika
 import aiohttp
 from minio import Minio
-from config import QUEUES, MINIO_CONFIG, RABBITMQ_CONFIG
+from config import QUEUES, MINIO_CONFIG, SERVICE_CONFIG
 
 from models import FileStatus, ParseableFile
 
@@ -78,7 +78,7 @@ async def get_parseable_files(task_id: str) -> List[ParseableFile]:
     return []
 
 async def get_rabbit_mq_connection():
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
 
     return connection
 

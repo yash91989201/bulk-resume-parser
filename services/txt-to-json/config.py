@@ -13,16 +13,14 @@ class MINIO_BUCKETS:
     PROCESSED_JSON_FILES = "processed-json-files"
     PROCESSED_TXT_FILES = "processed-txt-files"
 
-class RABBITMQ_CONFIG:
-    URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
-
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/txt-to-json"
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL","gemini-1.5-flash")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY","")
+    RABBITMQ_URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
     # no of workers spawned to process message from rabbit mq
-    WORKER_COUNT = int(os.getenv("WORKER_COUNT",50))
+    WORKER_COUNT = int(os.getenv("WORKER_COUNT",25))
     # no of messages a single worker can process while waiting for an I/O process to complete
     INTRA_WORKER_CONCURRENCY = int(os.getenv("INTRA_WORKER_CONCURRENCY",5))
     # size of the local task queue
@@ -34,5 +32,4 @@ class SERVICE_CONFIG:
 
 class QUEUES:
     TXT_TO_JSON = "txt_to_json_queue"
-    JSON_TO_SHEET = "json_to_sheet_queue"
     AGGREGATE_JSON = "aggregate_json_queue"
