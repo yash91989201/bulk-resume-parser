@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxml2 \
   libxslt1.1 \
   zlib1g \
-  rar \
+  unrar \
   p7zip-full \
   && rm -rf /var/lib/apt/lists/*
 
