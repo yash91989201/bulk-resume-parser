@@ -38,9 +38,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxml2 \
   libxslt1.1 \
   zlib1g \
-  unrar \
   p7zip-full \
   && rm -rf /var/lib/apt/lists/*
+
+# Add non-free repository and install unrar
+RUN echo "deb http://deb.debian.org/debian bookworm non-free" >> /etc/apt/sources.list && \
+  apt-get update && apt-get install -y unrar && \
+  rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /app
