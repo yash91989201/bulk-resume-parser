@@ -38,7 +38,8 @@ export const env = createEnv({
       .refine((val) => ["true", "false"].includes(val.toLowerCase()), {
         message: "S3_USE_SSL must be either 'true' or 'false'",
       })
-      .transform((val) => val.toLowerCase() === "true"),
+      .transform((val) => val.toLowerCase() === "true")
+      .optional(),
     RABBITMQ_URL: z.string(),
   },
 
