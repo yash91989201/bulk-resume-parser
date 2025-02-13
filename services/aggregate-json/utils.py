@@ -190,8 +190,8 @@ def should_update_processed_file_count(total_files: int, processed_files: int) -
     if total_files == 0 or processed_files == 0:
         return False
 
-    # batch_amount = 30 <= 25% of total_files <= 180 
-    batch_amount = min(max(30, total_files // 4), 180)
+    # batch_amount = 30 <= 25% of total_files <= 150 
+    batch_amount = min(max(25, total_files // 4), 150)
 
     # Check if the number of processed files is a multiple of the batch amount
     # OR if all files have been processed
