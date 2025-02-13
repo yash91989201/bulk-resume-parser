@@ -7,9 +7,8 @@ services:
     ports:
       - "5672:5672" # RabbitMQ messaging port
       - "15672:15672" # RabbitMQ management UI
-    environment:
-      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+    env_file:
+      - .env.docker
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
@@ -42,9 +41,8 @@ services:
     ports:
       - "9000:9000" # MinIO API port
       - "9001:9001" # MinIO Console port
-    environment:
-      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
-      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+    env_file:
+      - .env.docker
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
@@ -52,7 +50,7 @@ services:
   extract-archive:
     build:
       context: ./services/extract-archive
-    image: extract-archive-service:latest
+    image: yash6370/extract-archive-service:latest
     container_name: extract-archive
     networks:
       - bulk-resume-parser
@@ -61,21 +59,28 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      S3_HOST: "${S3_HOST}"
-      S3_PORT: "${S3_PORT}"
-      S3_USE_SSL: "${S3_USE_SSL}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY}"
-      RABBITMQ_HOST: "${RABBITMQ_HOST}"
-      RABBITMQ_PORT: "${RABBITMQ_PORT}"
-      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+    env_file:
+      - .env.docker
+
+  conversion-director:
+    build:
+      context: ./services/conversion-director
+    image: yash6370/conversion-director:latest
+    container_name: conversion-director
+    networks:
+      - bulk-resume-parser
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    env_file:
+      - .env.docker
 
   word-to-txt:
     build:
       context: ./services/word-to-txt
-    image: word-to-txt-service:latest
+    image: yash6370/word-to-txt-service:latest
     container_name: word-to-txt
     networks:
       - bulk-resume-parser
@@ -84,21 +89,13 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      S3_HOST: "${S3_HOST}"
-      S3_PORT: "${S3_PORT}"
-      S3_USE_SSL: "${S3_USE_SSL}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY}"
-      RABBITMQ_HOST: "${RABBITMQ_HOST}"
-      RABBITMQ_PORT: "${RABBITMQ_PORT}"
-      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+    env_file:
+      - .env.docker
 
   pdf-to-txt:
     build:
       context: ./services/pdf-to-txt
-    image: pdf-to-txt-service:latest
+    image: yash6370/pdf-to-txt-service:latest
     container_name: pdf-to-txt
     networks:
       - bulk-resume-parser
@@ -107,21 +104,13 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      S3_HOST: "${S3_HOST}"
-      S3_PORT: "${S3_PORT}"
-      S3_USE_SSL: "${S3_USE_SSL}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY}"
-      RABBITMQ_HOST: "${RABBITMQ_HOST}"
-      RABBITMQ_PORT: "${RABBITMQ_PORT}"
-      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+    env_file:
+      - .env.docker
 
   img-to-txt:
     build:
       context: ./services/img-to-txt
-    image: img-to-txt-service:latest
+    image: yash6370/img-to-txt-service:latest
     container_name: img-to-txt
     networks:
       - bulk-resume-parser
@@ -130,21 +119,13 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      S3_HOST: "${S3_HOST}"
-      S3_PORT: "${S3_PORT}"
-      S3_USE_SSL: "${S3_USE_SSL}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY}"
-      RABBITMQ_HOST: "${RABBITMQ_HOST}"
-      RABBITMQ_PORT: "${RABBITMQ_PORT}"
-      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+    env_file:
+      - .env.docker
 
   txt-to-json:
     build:
       context: ./services/txt-to-json
-    image: txt-to-json-service:latest
+    image: yash6370/txt-to-json-service:latest
     container_name: txt-to-json
     networks:
       - bulk-resume-parser
@@ -153,21 +134,13 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      S3_HOST: "${S3_HOST}"
-      S3_PORT: "${S3_PORT}"
-      S3_USE_SSL: "${S3_USE_SSL}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY}"
-      RABBITMQ_HOST: "${RABBITMQ_HOST}"
-      RABBITMQ_PORT: "${RABBITMQ_PORT}"
-      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+    env_file:
+      - .env.docker
 
   json-to-sheet:
     build:
       context: ./services/json-to-sheet
-    image: json-to-sheet-service:latest
+    image: yash6370/json-to-sheet-service:latest
     container_name: json-to-sheet
     networks:
       - bulk-resume-parser
@@ -178,16 +151,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      S3_HOST: "${S3_HOST}"
-      S3_PORT: "${S3_PORT}"
-      S3_USE_SSL: "${S3_USE_SSL}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY}"
-      RABBITMQ_HOST: "${RABBITMQ_HOST}"
-      RABBITMQ_PORT: "${RABBITMQ_PORT}"
-      RABBITMQ_USERNAME: "${RABBITMQ_USERNAME}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+    env_file:
+      - .env.docker
 
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -196,39 +161,26 @@ services:
       retries: 10
       start_period: 30s
 
+  unoserver:
+    image: ghcr.io/unoconv/unoserver-docker
+    container_name: unoserver
+    networks:
+      - bulk-resume-parser
+    ports:
+      - "2003:2003"
+    restart: unless-stopped
+
   app:
     build:
       context: .
-      args:
-        S3_HOST: "${S3_HOST}"
-        S3_PORT: "${S3_PORT}"
-        S3_USE_SSL: "${S3_USE_SSL}"
-        S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-        S3_SECRET_KEY: "${S3_SECRET_KEY}"
-        DATABASE_URL: "${DATABASE_URL}"
-        RABBITMQ_URL: "${RABBITMQ_URL}"
-        BETTER_AUTH_URL: "${BETTER_AUTH_URL}"
-        BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET}"
-        BETTER_AUTH_TRUSTED_ORIGINS: "${BETTER_AUTH_TRUSTED_ORIGINS}"
-        NEXT_PUBLIC_BETTER_AUTH_URL: "${NEXT_PUBLIC_BETTER_AUTH_URL}"
-    image: bulk-resume-parser:latest
+    image: yash6370/bulk-resume-parser:latest
     container_name: app
     networks:
       - bulk-resume-parser
     ports:
       - "3000:3000"
-    environment:
-      S3_HOST: "${S3_HOST}"
-      S3_PORT: "${S3_PORT}"
-      S3_USE_SSL: "${S3_USE_SSL}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY}"
-      DATABASE_URL: "${DATABASE_URL}"
-      RABBITMQ_URL: "${RABBITMQ_URL}"
-      BETTER_AUTH_URL: "${BETTER_AUTH_URL}"
-      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET}"
-      BETTER_AUTH_TRUSTED_ORIGINS: "${BETTER_AUTH_TRUSTED_ORIGINS}"
-      NEXT_PUBLIC_BETTER_AUTH_URL: "${NEXT_PUBLIC_BETTER_AUTH_URL}"
+    env_file:
+      - .env.docker
 
   app-db:
     image: mysql:latest
@@ -237,6 +189,8 @@ services:
       - bulk-resume-parser
     ports:
       - "${DB_PORT}:${DB_PORT}"
+    env_file:
+      - .env.docker
     environment:
       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
       MYSQL_DATABASE: ${DB_NAME}
@@ -260,8 +214,8 @@ services:
     container_name: app-db-migrator
     networks:
       - bulk-resume-parser
-    environment:
-      DATABASE_URL: "${DATABASE_URL}"
+    env_file:
+      - .env.docker
     depends_on:
       app-db:
         condition: service_healthy
