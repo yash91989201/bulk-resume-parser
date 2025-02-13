@@ -23,11 +23,6 @@ minio_client = Minio(
     secure=MINIO_CONFIG.SECURE
 )
 
-# async def get_rabbit_mq_connection():
-#     connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
-#
-#     return connection
-
 async def download_pdf_file(file_path:str)->str:
     """
     Downloads a file from MinIO to the local directory.

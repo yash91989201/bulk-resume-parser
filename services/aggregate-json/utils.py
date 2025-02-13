@@ -8,7 +8,7 @@ from minio import Minio
 import aio_pika
 import aiohttp
 import aiofiles
-from config import MINIO_CONFIG, RABBITMQ_CONFIG, MINIO_BUCKETS, SERVICE_CONFIG
+from config import MINIO_CONFIG, MINIO_BUCKETS, SERVICE_CONFIG
 from dataclasses import dataclass
 from enum import Enum
 
@@ -174,7 +174,7 @@ async def send_message_to_queue(queue_name: str, message: Dict):
         queue_name: The RabbitMQ queue name.
         message: The message to send.
     """
-    connection = await aio_pika.connect_robust(RABBITMQ_CONFIG.URL)
+    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
     async with connection:
         channel = await connection.channel()
         await channel.default_exchange.publish(
