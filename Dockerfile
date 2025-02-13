@@ -9,7 +9,7 @@ ARG NODE_ENV
 ARG BETTER_AUTH_URL
 ARG BETTER_AUTH_SECRET="aXNjaGVzdGRhcmtibGFua2V0YnJ1c2hiaWxsdGh1bWJza3lidXJpZWRtYXR0ZXJibGk="
 ARG BETTER_AUTH_TRUSTED_ORIGINS="https://bulk-resume-parser.yashraj-jaiswal.site"
-ARG S3_ENDPOINT
+ARG S3_ENDPOINT="https://minio.bulk-resume-parser.yashraj-jaiswal.site"
 ARG S3_ACCESS_KEY
 ARG S3_SECRET_KEY
 ARG S3_USE_SSL
