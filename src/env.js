@@ -50,6 +50,7 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string(),
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string(),
   },
 
   /**
@@ -70,6 +71,7 @@ export const env = createEnv({
     RABBITMQ_URL: process.env.RABBITMQ_URL,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
