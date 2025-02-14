@@ -1,4 +1,5 @@
-
+import os 
+import asyncio
 import json
 import logging
 from typing import List
@@ -24,57 +25,121 @@ minio_client = Minio(
     secure=MINIO_CONFIG.SECURE
 )
 
+# async def get_parseable_files(task_id: str) -> List[ParseableFile]:
+#     """
+#     Fetches parseable files for a given task ID.
+#     """
+#     api_url = f"{SERVICE_CONFIG.NEXT_API_URL}/parseable-files"
+#     
+#     headers = {"Content-Type": "application/json"}
+#     params = {"taskId": task_id}
+#
+#     try:
+#         async with aiohttp.ClientSession() as session:
+#             async with session.get(api_url, headers=headers, params=params) as response:
+#                 if response.status != 200:
+#                     logger.error(f"Task {task_id}: API request failed with status {response.status}")
+#                     return []
+#
+#                 response_data = await response.json()
+#
+#                 if response_data.get("status") != "SUCCESS":
+#                     logger.error(f"Task {task_id}: API responded with error: {response_data}")
+#                     return []
+#
+#                 parseable_files = []
+#                 for file_data in response_data.get("data").get("parseableFiles", []):
+#                     try:
+#                         file_status = FileStatus(file_data["status"])
+#                         parseable_file = ParseableFile(
+#                             bucketName=file_data["bucketName"],
+#                             fileName=file_data["fileName"],
+#                             filePath=file_data["filePath"],
+#                             originalName=file_data["originalName"],
+#                             contentType=file_data["contentType"],
+#                             size=file_data["size"],
+#                             status=file_status,
+#                             parsingTaskId=file_data["parsingTaskId"],
+#                         )
+#                         parseable_files.append(parseable_file)
+#                     except KeyError as e:
+#                         logger.error(f"Task {task_id}: Missing key in file data: {str(e)}")
+#                     except ValueError as e:
+#                         logger.error(f"Task {task_id}: Invalid file status received - {str(e)}")
+#
+#                 return parseable_files
+#
+#     except aiohttp.ClientError as e:
+#         logger.error(f"Task {task_id}: Connection error fetching parseable files: {str(e)}")
+#     except json.JSONDecodeError:
+#         logger.error(f"Task {task_id}: Invalid JSON response from API")
+#     except Exception as e:
+#         logger.error(f"Task {task_id}: Unexpected error fetching parseable files: {str(e)}")
+#
+#     return []
+
 async def get_parseable_files(task_id: str) -> List[ParseableFile]:
     """
-    Fetches parseable files for a given task ID.
+    Fetches parseable files for a given task ID, retrying up to 5 times if the 
+    parseableFiles array is empty.
     """
     api_url = f"{SERVICE_CONFIG.NEXT_API_URL}/parseable-files"
     
     headers = {"Content-Type": "application/json"}
     params = {"taskId": task_id}
+    retries = 5
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers=headers, params=params) as response:
-                if response.status != 200:
-                    logger.error(f"Task {task_id}: API request failed with status {response.status}")
-                    return []
+    for attempt in range(retries):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(api_url, headers=headers, params=params) as response:
+                    if response.status != 200:
+                        logger.error(f"Task {task_id}: API request failed with status {response.status}")
+                        return []
 
-                response_data = await response.json()
+                    response_data = await response.json()
 
-                if response_data.get("status") != "SUCCESS":
-                    logger.error(f"Task {task_id}: API responded with error: {response_data}")
-                    return []
+                    if response_data.get("status") != "SUCCESS":
+                        logger.error(f"Task {task_id}: API responded with error: {response_data}")
+                        return []
 
-                parseable_files = []
-                for file_data in response_data.get("data").get("parseableFiles", []):
-                    try:
-                        file_status = FileStatus(file_data["status"])
-                        parseable_file = ParseableFile(
-                            bucketName=file_data["bucketName"],
-                            fileName=file_data["fileName"],
-                            filePath=file_data["filePath"],
-                            originalName=file_data["originalName"],
-                            contentType=file_data["contentType"],
-                            size=file_data["size"],
-                            status=file_status,
-                            parsingTaskId=file_data["parsingTaskId"],
-                        )
-                        parseable_files.append(parseable_file)
-                    except KeyError as e:
-                        logger.error(f"Task {task_id}: Missing key in file data: {str(e)}")
-                    except ValueError as e:
-                        logger.error(f"Task {task_id}: Invalid file status received - {str(e)}")
+                    parseable_files = []
+                    for file_data in response_data.get("data", {}).get("parseableFiles", []):
+                        try:
+                            file_status = FileStatus(file_data["status"])
+                            parseable_file = ParseableFile(
+                                bucketName=file_data["bucketName"],
+                                fileName=file_data["fileName"],
+                                filePath=file_data["filePath"],
+                                originalName=file_data["originalName"],
+                                contentType=file_data["contentType"],
+                                size=file_data["size"],
+                                status=file_status,
+                                parsingTaskId=file_data["parsingTaskId"],
+                            )
+                            parseable_files.append(parseable_file)
+                        except KeyError as e:
+                            logger.error(f"Task {task_id}: Missing key in file data: {str(e)}")
+                        except ValueError as e:
+                            logger.error(f"Task {task_id}: Invalid file status received - {str(e)}")
 
-                return parseable_files
+                    if parseable_files:  # If we have parseable files, return them
+                        return parseable_files
+                    else:
+                        logger.warning(f"Task {task_id}: No parseable files found, retrying... ({attempt + 1}/{retries})")
 
-    except aiohttp.ClientError as e:
-        logger.error(f"Task {task_id}: Connection error fetching parseable files: {str(e)}")
-    except json.JSONDecodeError:
-        logger.error(f"Task {task_id}: Invalid JSON response from API")
-    except Exception as e:
-        logger.error(f"Task {task_id}: Unexpected error fetching parseable files: {str(e)}")
+        except aiohttp.ClientError as e:
+            logger.error(f"Task {task_id}: Connection error fetching parseable files: {str(e)}")
+        except json.JSONDecodeError:
+            logger.error(f"Task {task_id}: Invalid JSON response from API")
+        except Exception as e:
+            logger.error(f"Task {task_id}: Unexpected error fetching parseable files: {str(e)}")
 
+        # Wait a bit before retrying
+        await asyncio.sleep(2)
+
+    # If all retries fail, return an empty list
+    logger.error(f"Task {task_id}: Failed to fetch parseable files after {retries} retries")
     return []
 
 async def get_rabbit_mq_connection():
