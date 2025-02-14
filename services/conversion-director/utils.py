@@ -81,7 +81,7 @@ minio_client = Minio(
 async def get_parseable_files(task_id: str) -> List[ParseableFile]:
     """
     Fetches parseable files for a given task ID, retrying up to 5 times if the 
-    parseableFiles array is empty.
+    parseableFiles array is empty. Prints the number of retries.
     """
     api_url = f"{SERVICE_CONFIG.NEXT_API_URL}/parseable-files"
     
@@ -126,7 +126,7 @@ async def get_parseable_files(task_id: str) -> List[ParseableFile]:
                     if parseable_files:  # If we have parseable files, return them
                         return parseable_files
                     else:
-                        logger.warning(f"Task {task_id}: No parseable files found, retrying... ({attempt + 1}/{retries})")
+                        print(f"Task {task_id}: No parseable files found, retrying... ({attempt + 1}/{retries})")
 
         except aiohttp.ClientError as e:
             logger.error(f"Task {task_id}: Connection error fetching parseable files: {str(e)}")
