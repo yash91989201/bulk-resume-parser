@@ -14,7 +14,7 @@ from minio.error import S3Error
 from enum import Enum
 from typing import Callable, List
 from minio import Minio
-from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG, QUEUES
+from config import SERVICE_CONFIG, MINIO_BUCKETS, MINIO_CONFIG
 from dataclasses import dataclass
 
 # Logging Configuration
@@ -91,7 +91,7 @@ async def update_task_file_count(
     Update task file counts in db through Next.js API
     Returns True if successful, False otherwise
     """
-    api_url = "http://localhost:3000/api/parsing-task" 
+    api_url = f"{SERVICE_CONFIG.NEXT_API_URL}/parsing-task" 
     
     headers = {
         "Content-Type": "application/json",
@@ -143,7 +143,7 @@ async def insert_parseable_files(parseableFiles:List[ParseableFile]) ->bool :
     Insert parseable files record to db vis Next.js API
     Returns True if successful, False otherwise
     """
-    api_url= "http://localhost:3000/api/parseable-files"
+    api_url= f"{SERVICE_CONFIG.NEXT_API_URL}/parseable-files"
 
     headers= {
         "Content-Type" : "application/json"

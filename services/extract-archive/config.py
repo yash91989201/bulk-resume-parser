@@ -7,6 +7,7 @@ class SERVICE_CONFIG:
     DOWNLOAD_DIRECTORY = "/tmp/archive-files"
     EXTRACTION_DIRECTORY = "/tmp/parseable-files"
     RABBITMQ_URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
+    NEXT_API_URL = os.getenv("NEXT_API_URL","http://localhost:3000/api")
     # no of workers spawned to process message from rabbit mq
     WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))
     # size of the local task queue

@@ -1,4 +1,4 @@
-import os
+
 import json
 import logging
 from typing import List
@@ -28,7 +28,7 @@ async def get_parseable_files(task_id: str) -> List[ParseableFile]:
     """
     Fetches parseable files for a given task ID.
     """
-    api_url = "http://localhost:3000/api/parseable-files"
+    api_url = f"{SERVICE_CONFIG.NEXT_API_URL}/parseable-files"
     
     headers = {"Content-Type": "application/json"}
     params = {"taskId": task_id}

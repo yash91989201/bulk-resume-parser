@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class SERVICE_CONFIG:
+    NEXT_API_URL = os.getenv("NEXT_API_URL","http://localhost:3000/api")
     RABBITMQ_URL = os.getenv("RABBITMQ_URL","aqmp://guest:guest@localhost:5672")
     # no of workers spawned to process message from rabbit mq
     WORKER_COUNT = int(os.getenv("WORKER_COUNT",10))

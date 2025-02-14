@@ -65,7 +65,7 @@ class ParsingTask:
 
 async def fetch_parsing_task(task_id: str) -> ParsingTask:
     """Fetches the parsing task status from the API and returns a ParsingTask object."""
-    url = f"http://localhost:3000/api/parsing-task?taskId={task_id}"
+    url = f"{SERVICE_CONFIG.NEXT_API_URL}/parsing-task?taskId={task_id}"
     logger.info(f"Fetching parsing task from API for task ID: {task_id}")
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
@@ -94,7 +94,7 @@ async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
     Updates the parsing task status via PATCH API.
     Returns True if successful, False otherwise.
     """
-    url = f"http://localhost:3000/api/parsing-task?taskId={task_id}"
+    url = f"{SERVICE_CONFIG.NEXT_API_URL}/parsing-task?taskId={task_id}"
     logger.info(f"Updating parsing task for task ID: {task_id}")
     async with aiohttp.ClientSession() as session:
         async with session.patch(url, json=updated_parsing_task) as response:
