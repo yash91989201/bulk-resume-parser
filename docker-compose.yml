@@ -5,8 +5,8 @@ services:
     networks:
       - bulk-resume-parser
     ports:
-      - "5672:5672" # RabbitMQ messaging port
-      - "15672:15672" # RabbitMQ management UI
+      - "5672:5672"
+      - "15672:15672"
     env_file:
       - .env.docker
     healthcheck:
@@ -39,8 +39,8 @@ services:
     networks:
       - bulk-resume-parser
     ports:
-      - "9000:9000" # MinIO API port
-      - "9001:9001" # MinIO Console port
+      - "9000:9000"
+      - "9001:9001"
     env_file:
       - .env.docker
     command: server /data --console-address ":9001"
@@ -127,6 +127,21 @@ services:
       context: ./services/txt-to-json
     image: yash6370/txt-to-json-service:latest
     container_name: txt-to-json
+    networks:
+      - bulk-resume-parser
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    env_file:
+      - .env.docker
+
+  aggregate-json:
+    build:
+      context: ./services/aggregate-json
+    image: yash6370/aggregate-json-service:latest
+    container_name: aggregate_json
     networks:
       - bulk-resume-parser
     depends_on:

@@ -5,7 +5,7 @@ load_dotenv()
 
 class SERVICE_CONFIG:
     DOWNLOAD_DIR = "/tmp/aggregate-json"
-    REDIS_URL = os.getenv("REDIS_URL","redis://localhost:6379")
+    REDIS_URL = os.getenv("REDIS_URL","redis://redis:6379")
     RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672")
     NEXT_API_URL = os.getenv("NEXT_API_URL","http://localhost:3000/api")
     # Number of workers spawned to process messages from RabbitMQ
