@@ -28,12 +28,15 @@ class ResumeDataExtractor:
             "email": "Candidate's email address in a valid format, with all unwanted or non-printable characters (e.g., null bytes) removed (if not available, then null)",
             "phone_number": "Comma-separated list of valid phone numbers. A valid phone number is exactly 10 digits after removing country code and any spaces, dashes, or special characters (if no valid phone numbers are found, then null)",
             "country_code": "Comma-separated list of unique country codes (each prefixed with a + sign) extracted from the phone numbers (if none, then null)",
-            "invalid_number": "Comma-separated list of phone numbers that do not have exactly 10 digits after extracting any country code (if none, then null)"
+            "invalid_number": "Comma-separated list of phone numbers that do not have exactly 10 digits after extracting any country code (if none, then null)",
+            "designation": "The candidate’s current job title or designation based on the most recent or current employment mentioned in the resume (if unavailable, then null)",
+            "department": "Based on the resume content, classify the candidate’s department into one of the following categories: 'Construction', 'IT', 'Oil and Gas', 'Power and Energy', 'Others', or 'Not mentioned'. If unclear or missing, return 'Not mentioned'.",
+            "functional_area": "The functional area of the position the candidate is applying for, such as 'Software Development', 'Project Management', 'Business Analysis', 'Finance', 'Sales', etc. If the area is not clearly stated or inferable, return 'Not mentioned'."
         }}
 
         **Rules & Requirements:**
         1. **Output Format:** The output must be a strict JSON object and contain only the JSON without any extra text.
-        2. **Field Defaults:** If a field is unavailable or missing in the resume text, return its value as `null`.
+        2. **Field Defaults:** If a field is unavailable or missing in the resume text, return its value as `null` (or 'Not mentioned' where applicable).
         3. **Email Field:**
            - Validate the email format (e.g., ensure it contains an '@' and a domain).
            - Remove any unwanted or non-printable characters (such as null bytes) so that the email appears clean.
@@ -45,10 +48,19 @@ class ResumeDataExtractor:
              - If the cleaned number has exactly 10 digits, consider it valid and include it in the `phone_number` field.
              - If the cleaned number does not have exactly 10 digits after extracting the country code, include it in the `invalid_number` field.
            - List all unique country codes found in a comma-separated format under `country_code`.
-        5. **Consistency:** If multiple valid phone numbers are found, the `phone_number` field must list them separated by commas. If all phone numbers are invalid, set `phone_number` to `null` and list all in `invalid_number`.
+        5. **Designation Extraction:**
+           - Find the candidate’s current or most recent designation based on context and placement in the resume.
+           - Titles like "Software Engineer", "Project Manager", "Civil Supervisor", etc., should be considered.
+        6. **Department Classification:**
+           - Analyze the resume text and categorize the department based on relevant keywords, skills, experiences, or domain knowledge.
+           - Choose **only one** of the following categories: 'Construction', 'IT', 'Oil and Gas', 'Power and Energy', 'Others', or 'Not mentioned'.
+           - If multiple domains are present, prioritize based on most recent or primary experience.
+        7. **Functional Area Detection:**
+           - Determine the functional area the candidate is applying to by reviewing position objectives, headlines, summaries, or listed job roles.
+           - Examples: 'Software Development', 'Project Management', 'Finance', 'Human Resources', 'Sales and Marketing', etc.
+           - Return the best-fit term or phrase. If unclear or missing, return 'Not mentioned'.
 
         **Resume Text:**  
-
         ```  
         {sanitized_text_content}  
         ```      
@@ -95,7 +107,10 @@ class ResumeDataExtractor:
                 "email": data.get("email"),
                 "phone_number": data.get("phone_number"),
                 "country_code": data.get("country_code"),
-                "invalid_number": data.get("invalid_number")
+                "invalid_number": data.get("invalid_number"),
+                "designation":data.get("designation"),
+                "department":data.get("department"),
+                "functional_area":data.get("functional_area")
             }
         except json.JSONDecodeError:
             logger.error("Invalid JSON response")
@@ -107,7 +122,10 @@ class ResumeDataExtractor:
             "email": None,
             "phone_number": None,
             "country_code": None,
-            "invalid_number": None 
+            "invalid_number": None,
+            "designation": None,
+            "department": None,
+            "functional_area": None
         }
 
 

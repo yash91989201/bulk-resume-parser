@@ -1,5 +1,4 @@
-"use client";
-
+"use client";;
 import React from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -12,7 +11,7 @@ import {
   MAX_FILE_SIZE_S3_ENDPOINT,
   formatFileSize,
 } from "@/lib/utils";
-import { api } from "@/trpc/react";
+import { useTRPC } from "@/trpc/react";
 // SCHEMAS
 import { ParsingTaskFormSchema } from "@/lib/schema";
 // UI
@@ -41,12 +40,15 @@ import type { ParseableFileInsertType, ParsingTaskFormType } from "@/lib/types";
 // CONSTANTS
 import { ACCEPTED_FILE_TYPES, STORAGE_BUCKETS } from "@/constants";
 
+import { useMutation } from "@tanstack/react-query";
+
 export const ParsingTaskForm = () => {
+  const api = useTRPC();
   const { mutateAsync: createParsingTask } =
-    api.parsingTask.create.useMutation();
+    useMutation(api.parsingTask.create.mutationOptions());
 
   const { mutateAsync: startParsing } =
-    api.parsingTask.startParsing.useMutation();
+    useMutation(api.parsingTask.startParsing.mutationOptions());
 
   const parsingTaskForm = useForm<ParsingTaskFormType>({
     resolver: zodResolver(ParsingTaskFormSchema),
@@ -159,7 +161,7 @@ export const ParsingTaskForm = () => {
                     <FormControl>
                       <Input
                         {...field}
-                        className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        className="w-full rounded-md border border-gray-300 p-2 shadow-xs focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                         placeholder="Enter task name"
                       />
                     </FormControl>

@@ -11,8 +11,6 @@ import { TRPCReactProvider } from "@/trpc/react";
 // TYPES
 import { type Metadata } from "next";
 import { Toaster } from "sonner";
-import Script from "next/script";
-import { env } from "@/env";
 
 const ibmPlexSans = IBM_Plex_Sans({
   weight: ["400", "500", "600", "700"],
@@ -44,10 +42,6 @@ export default function RootLayout({
       <body>
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <Toaster />
-        <Script
-          src="https://umami.bulk-resume-parser.yashraj-jaiswal.site/script.js"
-          data-website-id={env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-        />
       </body>
     </html>
   );

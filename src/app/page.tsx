@@ -25,7 +25,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <div className="flex items-center space-x-2">
             <FileText className="h-6 w-6 text-primary" />
@@ -90,7 +90,7 @@ export default function LandingPage() {
           </div>
           <div className="animate-float w-full max-w-xl flex-1">
             <div className="relative aspect-square w-full">
-              <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-r from-blue-500/30 to-purple-500/30 blur-3xl"></div>
+              <div className="absolute inset-0 animate-pulse rounded-full bg-linear-to-r from-blue-500/30 to-purple-500/30 blur-3xl"></div>
               <Image
                 src="/assets/placeholder.svg?height=400&width=400"
                 alt="Abstract technology visualization"
@@ -164,7 +164,7 @@ export default function LandingPage() {
             </ul>
           </div>
           <div className="relative">
-            <div className="absolute inset-0 -rotate-1 transform rounded-2xl bg-gradient-to-r from-primary/5 to-accent/5"></div>
+            <div className="absolute inset-0 -rotate-1 transform rounded-2xl bg-linear-to-r from-primary/5 to-accent/5"></div>
             <Card className="relative transform transition-all hover:scale-[1.01]">
               <CardHeader>
                 <CardTitle className="font-display">
@@ -239,15 +239,15 @@ export default function LandingPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="bg-gradient-to-b from-white to-gray-50 px-4 py-12 md:px-6">
+      <section className="bg-linear-to-b from-white to-gray-50 px-4 py-12 md:px-6">
         <div className="container mx-auto max-w-6xl">
           <h2 className="font-display mb-12 text-center text-3xl font-bold tracking-tighter sm:text-4xl">
             Why Choose ResumeParser?
           </h2>
           <div className="grid gap-8 md:grid-cols-2">
             <div className="group relative">
-              <div className="absolute inset-0 -rotate-1 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
-              <div className="relative rounded-2xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div className="absolute inset-0 -rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
                   <div className="rounded-lg bg-primary/10 p-3">
                     <Zap className="h-6 w-6 text-primary" />
@@ -266,8 +266,8 @@ export default function LandingPage() {
             </div>
 
             <div className="group relative">
-              <div className="absolute inset-0 rotate-1 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
-              <div className="relative rounded-2xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div className="absolute inset-0 rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
                   <div className="rounded-lg bg-primary/10 p-3">
                     <Shield className="h-6 w-6 text-primary" />
@@ -286,8 +286,8 @@ export default function LandingPage() {
             </div>
 
             <div className="group relative">
-              <div className="absolute inset-0 rotate-1 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
-              <div className="relative rounded-2xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div className="absolute inset-0 rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
                   <div className="rounded-lg bg-primary/10 p-3">
                     <BarChart className="h-6 w-6 text-primary" />
@@ -306,8 +306,8 @@ export default function LandingPage() {
             </div>
 
             <div className="group relative">
-              <div className="absolute inset-0 -rotate-1 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
-              <div className="relative rounded-2xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div className="absolute inset-0 -rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
                   <div className="rounded-lg bg-primary/10 p-3">
                     <FileText className="h-6 w-6 text-primary" />
