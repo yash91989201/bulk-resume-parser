@@ -54,23 +54,21 @@ const ERROR_MESSAGES = {
   },
 };
 
-const MultiFileDropzone = (
-  {
-    ref,
-    dropzoneOptions,
-    value,
-    className,
-    disabled,
-    onFilesAdded,
-    onChange
-  }: InputProps & {
-    ref: React.RefObject<HTMLInputElement>;
-  }
-) => {
+const MultiFileDropzone = ({
+  dropzoneOptions,
+  value,
+  className,
+  disabled,
+  onFilesAdded,
+  onChange,
+}: InputProps) => {
+  const ref = React.useRef<HTMLInputElement>(null);
+
   const [customError, setCustomError] = React.useState<string>();
   if (dropzoneOptions?.maxFiles && value?.length) {
     disabled = disabled ?? value.length >= dropzoneOptions.maxFiles;
   }
+
   // dropzone configuration
   const {
     getRootProps,
@@ -169,10 +167,7 @@ const MultiFileDropzone = (
 
         {/* Selected Files */}
         {value?.map(
-          (
-            { file, abortController, progress, estimatedTimeRemaining },
-            i,
-          ) => (
+          ({ file, abortController, progress, estimatedTimeRemaining }, i) => (
             <div
               key={i}
               className="flex h-16 w-full flex-col justify-center rounded border border-gray-300 px-4 py-2"

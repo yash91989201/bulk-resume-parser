@@ -81,4 +81,8 @@ export const parsingTaskRouter = createTRPCRouter({
         message: "Failed to parse files",
       };
     }),
+
+  get: protectedProcedure.query(({ ctx }) => {
+    return ctx.db.query.parsingTaskTable.findMany();
+  }),
 });

@@ -23,30 +23,30 @@ import { Check, FileText, Upload, Zap, Shield, BarChart } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background font-sans">
+    <div className="bg-background min-h-screen font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
-        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
+      <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur-sm">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-0">
           <div className="flex items-center space-x-2">
-            <FileText className="h-6 w-6 text-primary" />
+            <FileText className="text-primary h-6 w-6" />
             <span className="font-display text-xl font-bold">ResumeParser</span>
           </div>
           <nav className="hidden flex-1 items-center justify-center space-x-8 md:flex">
             <Link
               href="#features"
-              className="text-sm font-medium transition-colors hover:text-primary"
+              className="hover:text-primary text-sm font-medium transition-colors"
             >
               Features
             </Link>
             <Link
               href="#demo"
-              className="text-sm font-medium transition-colors hover:text-primary"
+              className="hover:text-primary text-sm font-medium transition-colors"
             >
               Demo
             </Link>
             <Link
               href="#pricing"
-              className="text-sm font-medium transition-colors hover:text-primary"
+              className="hover:text-primary text-sm font-medium transition-colors"
             >
               Pricing
             </Link>
@@ -76,7 +76,7 @@ export default function LandingPage() {
                 Transform Resume Data into
                 <span className="text-primary"> Actionable Insights</span>
               </h1>
-              <p className="mx-auto max-w-[700px] font-sans text-muted-foreground md:text-xl lg:mx-0">
+              <p className="text-muted-foreground mx-auto max-w-[700px] font-sans md:text-xl lg:mx-0">
                 Bulk parse resumes in multiple formats. Extract structured data
                 instantly with AI-powered analysis.
               </p>
@@ -110,7 +110,7 @@ export default function LandingPage() {
             <h2 className="font-display mb-4 text-3xl font-bold tracking-tighter sm:text-4xl">
               Powerful Features
             </h2>
-            <p className="mx-auto max-w-[600px] text-muted-foreground">
+            <p className="text-muted-foreground mx-auto max-w-[600px]">
               Everything you need to streamline your resume processing workflow
             </p>
           </div>
@@ -123,7 +123,7 @@ export default function LandingPage() {
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <feature.icon className="h-5 w-5 text-accent" />
+                    <feature.icon className="text-accent h-5 w-5" />
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
@@ -138,33 +138,33 @@ export default function LandingPage() {
       <section id="demo" className="px-4 py-12 md:px-6">
         <div className="container mx-auto grid items-center gap-8 lg:grid-cols-2">
           <div className="space-y-4 text-center lg:text-left">
-            <div className="mb-2 inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            <div className="bg-primary/10 text-primary mb-2 inline-block rounded-lg px-3 py-1 text-sm font-medium">
               Try it yourself
             </div>
             <h2 className="font-display text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
               See the Magic in Action
             </h2>
-            <p className="max-w-[600px] text-muted-foreground md:text-xl">
+            <p className="text-muted-foreground max-w-[600px] md:text-xl">
               Experience firsthand how ResumeParser transforms your resume data
               into structured, actionable insights in seconds.
             </p>
-            <ul className="space-y-3 text-muted-foreground">
+            <ul className="text-muted-foreground space-y-3">
               <li className="flex items-center gap-2">
-                <Check className="h-5 w-5 text-accent" />
+                <Check className="text-accent h-5 w-5" />
                 Instant parsing and analysis
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-5 w-5 text-accent" />
+                <Check className="text-accent h-5 w-5" />
                 Support for PDF, DOCX, and images
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-5 w-5 text-accent" />
+                <Check className="text-accent h-5 w-5" />
                 Free demo, no signup required
               </li>
             </ul>
           </div>
           <div className="relative">
-            <div className="absolute inset-0 -rotate-1 transform rounded-2xl bg-linear-to-r from-primary/5 to-accent/5"></div>
+            <div className="from-primary/5 to-accent/5 absolute inset-0 -rotate-1 transform rounded-2xl bg-linear-to-r"></div>
             <Card className="relative transform transition-all hover:scale-[1.01]">
               <CardHeader>
                 <CardTitle className="font-display">
@@ -173,18 +173,18 @@ export default function LandingPage() {
                 <CardDescription>Try it with any resume format</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="cursor-pointer rounded-xl border-2 border-dashed border-gray-200 bg-white/50 p-8 text-center transition-all duration-300 hover:border-primary hover:shadow-lg">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <Upload className="h-8 w-8 text-primary" />
+                <div className="hover:border-primary cursor-pointer rounded-xl border-2 border-dashed border-gray-200 bg-white/50 p-8 text-center transition-all duration-300 hover:shadow-lg">
+                  <div className="bg-primary/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+                    <Upload className="text-primary h-8 w-8" />
                   </div>
-                  <p className="mb-2 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mb-2 text-sm">
                     Drag and drop your file here, or click to browse
                   </p>
                   <p className="text-xs text-gray-400">
                     Supported formats: PDF, DOCX, JPG, PNG
                   </p>
                 </div>
-                <Button className="w-full bg-primary hover:bg-primary/90">
+                <Button className="bg-primary hover:bg-primary/90 w-full">
                   Process Resume
                 </Button>
               </CardContent>
@@ -200,7 +200,7 @@ export default function LandingPage() {
             <h2 className="font-display text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
               Simple, Transparent Pricing
             </h2>
-            <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+            <p className="text-muted-foreground mx-auto max-w-[700px] md:text-xl">
               Choose the plan that best fits your needs
             </p>
           </div>
@@ -221,14 +221,14 @@ export default function LandingPage() {
                   <ul className="space-y-2">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-center">
-                        <Check className="mr-2 h-4 w-4 text-accent" />
+                        <Check className="text-accent mr-2 h-4 w-4" />
                         {feature}
                       </li>
                     ))}
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full bg-primary hover:bg-primary/90">
+                  <Button className="bg-primary hover:bg-primary/90 w-full">
                     {plan.buttonText}
                   </Button>
                 </CardFooter>
@@ -246,11 +246,11 @@ export default function LandingPage() {
           </h2>
           <div className="grid gap-8 md:grid-cols-2">
             <div className="group relative">
-              <div className="absolute inset-0 -rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="from-primary/10 to-accent/10 absolute inset-0 -rotate-1 rounded-2xl bg-linear-to-r transition-transform duration-300 group-hover:rotate-0"></div>
               <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <Zap className="h-6 w-6 text-primary" />
+                  <div className="bg-primary/10 rounded-lg p-3">
+                    <Zap className="text-primary h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-display mb-2 text-xl font-semibold">
@@ -266,11 +266,11 @@ export default function LandingPage() {
             </div>
 
             <div className="group relative">
-              <div className="absolute inset-0 rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="from-primary/10 to-accent/10 absolute inset-0 rotate-1 rounded-2xl bg-linear-to-r transition-transform duration-300 group-hover:rotate-0"></div>
               <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <Shield className="h-6 w-6 text-primary" />
+                  <div className="bg-primary/10 rounded-lg p-3">
+                    <Shield className="text-primary h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-display mb-2 text-xl font-semibold">
@@ -286,11 +286,11 @@ export default function LandingPage() {
             </div>
 
             <div className="group relative">
-              <div className="absolute inset-0 rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="from-primary/10 to-accent/10 absolute inset-0 rotate-1 rounded-2xl bg-linear-to-r transition-transform duration-300 group-hover:rotate-0"></div>
               <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <BarChart className="h-6 w-6 text-primary" />
+                  <div className="bg-primary/10 rounded-lg p-3">
+                    <BarChart className="text-primary h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-display mb-2 text-xl font-semibold">
@@ -306,11 +306,11 @@ export default function LandingPage() {
             </div>
 
             <div className="group relative">
-              <div className="absolute inset-0 -rotate-1 rounded-2xl bg-linear-to-r from-primary/10 to-accent/10 transition-transform duration-300 group-hover:rotate-0"></div>
+              <div className="from-primary/10 to-accent/10 absolute inset-0 -rotate-1 rounded-2xl bg-linear-to-r transition-transform duration-300 group-hover:rotate-0"></div>
               <div className="relative rounded-2xl bg-white p-6 shadow-xs transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <FileText className="h-6 w-6 text-primary" />
+                  <div className="bg-primary/10 rounded-lg p-3">
+                    <FileText className="text-primary h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-display mb-2 text-xl font-semibold">
@@ -327,7 +327,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 text-center">
-            <p className="animate-fade-up mx-auto max-w-3xl leading-relaxed text-muted-foreground">
+            <p className="animate-fade-up text-muted-foreground mx-auto max-w-3xl leading-relaxed">
               Whether you&apos;re a small business or a large enterprise, our
               scalable solution adapts to your needs while maintaining the
               highest standards of data security and privacy. Join thousands of
@@ -339,7 +339,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-12 md:px-6">
-        <div className="rounded-lg bg-primary p-8 text-white md:p-12">
+        <div className="bg-primary rounded-lg p-8 text-white md:p-12">
           <div className="flex flex-col items-center space-y-4 text-center">
             <h2 className="font-display text-3xl font-bold tracking-tighter sm:text-4xl">
               Ready to Get Started?
@@ -377,11 +377,11 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-background">
+      <footer className="bg-background border-t">
         <div className="container mx-auto px-4 py-8 md:px-6">
           <div className="flex flex-col items-center justify-between md:flex-row">
             <div className="flex items-center space-x-2">
-              <FileText className="h-6 w-6 text-primary" />
+              <FileText className="text-primary h-6 w-6" />
               <span className="font-display text-xl font-bold">
                 ResumeParser
               </span>
@@ -389,25 +389,25 @@ export default function LandingPage() {
             <div className="mt-4 flex flex-wrap justify-center gap-4 md:mt-0">
               <Link
                 href="#"
-                className="text-sm text-muted-foreground hover:text-primary"
+                className="text-muted-foreground hover:text-primary text-sm"
               >
                 Privacy Policy
               </Link>
               <Link
                 href="#"
-                className="text-sm text-muted-foreground hover:text-primary"
+                className="text-muted-foreground hover:text-primary text-sm"
               >
                 Terms of Service
               </Link>
               <Link
                 href="#"
-                className="text-sm text-muted-foreground hover:text-primary"
+                className="text-muted-foreground hover:text-primary text-sm"
               >
                 Contact
               </Link>
             </div>
           </div>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground mt-4 text-center text-sm">
             © {new Date().getFullYear()} ResumeParser. All rights reserved.
           </div>
         </div>

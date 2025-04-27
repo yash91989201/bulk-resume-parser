@@ -1,3 +1,9 @@
+name: "bulk-resume-parser"
+
+volumes:
+  redis-data:
+  minio-data:
+
 services:
   rabbitmq:
     image: rabbitmq:management
@@ -239,7 +245,3 @@ services:
 networks:
   bulk-resume-parser:
     name: bulk-resume-parser
-
-volumes:
-  redis-data:
-  minio-data:

@@ -1,7 +1,8 @@
-"use client";;
+"use client";
 import React from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 // UTILS
 import {
@@ -40,15 +41,15 @@ import type { ParseableFileInsertType, ParsingTaskFormType } from "@/lib/types";
 // CONSTANTS
 import { ACCEPTED_FILE_TYPES, STORAGE_BUCKETS } from "@/constants";
 
-import { useMutation } from "@tanstack/react-query";
-
 export const ParsingTaskForm = () => {
   const api = useTRPC();
-  const { mutateAsync: createParsingTask } =
-    useMutation(api.parsingTask.create.mutationOptions());
+  const { mutateAsync: createParsingTask } = useMutation(
+    api.parsingTask.create.mutationOptions(),
+  );
 
-  const { mutateAsync: startParsing } =
-    useMutation(api.parsingTask.startParsing.mutationOptions());
+  const { mutateAsync: startParsing } = useMutation(
+    api.parsingTask.startParsing.mutationOptions(),
+  );
 
   const parsingTaskForm = useForm<ParsingTaskFormType>({
     resolver: zodResolver(ParsingTaskFormSchema),
@@ -135,93 +136,91 @@ export const ParsingTaskForm = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">
-            Create Parsing Task
-          </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            Upload files to start a new parsing task. Ensure the total file size
-            does not exceed&nbsp;
-            {formatFileSize(MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024)}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...parsingTaskForm}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={control}
-                name="taskName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Task Name
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="w-full rounded-md border border-gray-300 p-2 shadow-xs focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                        placeholder="Enter task name"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-sm text-red-600" />
-                  </FormItem>
-                )}
-              />
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold">
+          Create Parsing Task
+        </CardTitle>
+        <CardDescription className="text-gray-600 dark:text-gray-400">
+          Upload files to start a new parsing task. Ensure the total file size
+          does not exceed&nbsp;
+          {formatFileSize(MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024)}.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...parsingTaskForm}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={control}
+              name="taskName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Task Name
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className="w-full rounded-md border border-gray-300 p-2 shadow-xs focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      placeholder="Enter task name"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-sm text-red-600" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={control}
-                name="taskFilesState"
-                render={() => (
-                  <FormItem>
-                    <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Task Files
-                    </FormLabel>
-                    <FormControl>
-                      <MultiFileDropzone
-                        value={taskFilesState.map(
-                          ({ file, progress, estimatedTimeRemaining }) => ({
-                            file,
-                            key: file.name,
-                            progress,
-                            estimatedTimeRemaining,
-                          }),
-                        )}
-                        onChange={(fileStates) => {
-                          setValue(
-                            "taskFilesState",
-                            fileStates.map(
-                              ({ file, progress, estimatedTimeRemaining }) => ({
-                                file,
-                                progress: progress || "PENDING",
-                                estimatedTimeRemaining,
-                              }),
-                            ),
-                          );
-                        }}
-                        dropzoneOptions={{
-                          maxSize: MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024, // Convert MB to bytes
-                          multiple: true,
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-sm text-red-600" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={control}
+              name="taskFilesState"
+              render={() => (
+                <FormItem>
+                  <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Task Files
+                  </FormLabel>
+                  <FormControl>
+                    <MultiFileDropzone
+                      value={taskFilesState.map(
+                        ({ file, progress, estimatedTimeRemaining }) => ({
+                          file,
+                          key: file.name,
+                          progress,
+                          estimatedTimeRemaining,
+                        }),
+                      )}
+                      onChange={(fileStates) => {
+                        setValue(
+                          "taskFilesState",
+                          fileStates.map(
+                            ({ file, progress, estimatedTimeRemaining }) => ({
+                              file,
+                              progress: progress || "PENDING",
+                              estimatedTimeRemaining,
+                            }),
+                          ),
+                        );
+                      }}
+                      dropzoneOptions={{
+                        maxSize: MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024, // Convert MB to bytes
+                        multiple: true,
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-sm text-red-600" />
+                </FormItem>
+              )}
+            />
 
-              <Button
-                type="submit"
-                disabled={formState.isSubmitting}
-                className="w-full"
-              >
-                {formState.isSubmitting ? "Working" : "Start parsing"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+            <Button
+              type="submit"
+              disabled={formState.isSubmitting}
+              className="w-full"
+            >
+              {formState.isSubmitting ? "Working" : "Start parsing"}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
