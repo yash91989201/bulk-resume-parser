@@ -31,7 +31,7 @@ class ResumeDataExtractor:
             "invalid_number": "Comma-separated list of phone numbers that do not have exactly 10 digits after extracting any country code (if none, then null)",
             "designation": "The candidate’s current job title or designation based on the most recent or current employment mentioned in the resume (if unavailable, then null)",
             "department": "Based on the resume content, classify the candidate’s department into one of the following categories: 'Construction', 'IT', 'Oil and Gas', 'Power and Energy', 'Others', or 'Not mentioned'. If unclear or missing, return 'Not mentioned'.",
-            "functional_area": "The functional area of the position the candidate is applying for, such as 'Software Development', 'Project Management', 'Business Analysis', 'Finance', 'Sales', etc. If the area is not clearly stated or inferable, return 'Not mentioned'."
+            "functional_area": "The candidate's core expertise domain inferred from job roles, skills, certifications, and experience. Capture loose depictions (e.g., 'coding' → 'Software Development', 'people management' → 'HR', 'account handling' → 'Sales'). Return standardized terms like 'Software Development', 'Project Management', 'Finance', etc. If unclear, return null."
         }}
 
         **Rules & Requirements:**
@@ -56,15 +56,17 @@ class ResumeDataExtractor:
            - Choose **only one** of the following categories: 'Construction', 'IT', 'Oil and Gas', 'Power and Energy', 'Others', or 'Not mentioned'.
            - If multiple domains are present, prioritize based on most recent or primary experience.
         7. **Functional Area Detection:**
-           - Determine the functional area the candidate is applying to by reviewing position objectives, headlines, summaries, or listed job roles.
-           - Examples: 'Software Development', 'Project Management', 'Finance', 'Human Resources', 'Sales and Marketing', etc.
-           - Return the best-fit term or phrase. If unclear or missing, return 'Not mentioned'.
+           - Infer from job titles, responsibilities, tools/technologies, certifications, and achievements - not just explicit mentions.
+           - Map loose terms to standardized areas (e.g., 'full-stack dev' → 'Software Development', 'recruitment' → 'HR', 'client acquisition' → 'Sales').
+           - Prioritize terms reflecting the candidate's primary expertise over generic terms.
 
         **Resume Text:**  
+
         ```  
         {sanitized_text_content}  
         ```      
-        """ 
+        """
+
 
         for attempt in range(self.max_retries):
             api_key = self.gemini_api_key 
