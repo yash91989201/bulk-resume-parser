@@ -5,11 +5,11 @@ from config import SERVICE_CONFIG
 from google.generativeai import GenerativeModel, configure, GenerationConfig
 from utils import logger
 
+
 class ResumeDataExtractor:
     def __init__(self, gemini_api_key: str, max_retries: int = 3):
-        self.gemini_api_key= gemini_api_key 
+        self.gemini_api_key = gemini_api_key
         self.max_retries = max_retries
-
 
     async def extract_data(self, text_content: str) -> Dict:
         """Extract resume data with rate limit handling"""
@@ -17,8 +17,10 @@ class ResumeDataExtractor:
         if len(text_content) == 0:
             return self.empty_response()
 
-        # Remove empty new lines from the text 
-        sanitized_text_content = "\n".join([line for line in text_content.splitlines() if line.strip()])
+        # Remove empty new lines from the text
+        sanitized_text_content = "\n".join(
+            [line for line in text_content.splitlines() if line.strip()]
+        )
 
         prompt = f"""
         Extract the following details from the given resume text and return a strictly valid JSON object with no extra text:
@@ -67,11 +69,10 @@ class ResumeDataExtractor:
         ```      
         """
 
-
         for attempt in range(self.max_retries):
-            api_key = self.gemini_api_key 
+            api_key = self.gemini_api_key
             if not api_key:
-                await asyncio.sleep(2 ** attempt)
+                await asyncio.sleep(2**attempt)
                 continue
 
             try:
@@ -81,9 +82,8 @@ class ResumeDataExtractor:
                     gemini.generate_content,
                     prompt,
                     generation_config=GenerationConfig(
-                        temperature=0,
-                        response_mime_type="application/json"
-                    )
+                        temperature=0, response_mime_type="application/json"
+                    ),
                 )
 
                 if not response.text:
@@ -93,8 +93,8 @@ class ResumeDataExtractor:
 
             except Exception as e:
                 if "429" in str(e):
-                    logger.error("API KEY rate limited") 
-                logger.error(f"Attempt {attempt+1} failed: {str(e)}")
+                    logger.error("API KEY rate limited")
+                logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
                 if attempt == self.max_retries - 1:
                     raise
 
@@ -110,9 +110,9 @@ class ResumeDataExtractor:
                 "phone_number": data.get("phone_number"),
                 "country_code": data.get("country_code"),
                 "invalid_number": data.get("invalid_number"),
-                "designation":data.get("designation"),
-                "department":data.get("department"),
-                "functional_area":data.get("functional_area")
+                "designation": data.get("designation"),
+                "department": data.get("department"),
+                "functional_area": data.get("functional_area"),
             }
         except json.JSONDecodeError:
             logger.error("Invalid JSON response")
@@ -127,11 +127,10 @@ class ResumeDataExtractor:
             "invalid_number": None,
             "designation": None,
             "department": None,
-            "functional_area": None
+            "functional_area": None,
         }
 
 
 resume_data_extractor = ResumeDataExtractor(
-    gemini_api_key=SERVICE_CONFIG.GEMINI_API_KEY,
-    max_retries=SERVICE_CONFIG.MAX_RETRIES
+    gemini_api_key=SERVICE_CONFIG.GEMINI_API_KEY, max_retries=SERVICE_CONFIG.MAX_RETRIES
 )
