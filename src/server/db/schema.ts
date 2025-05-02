@@ -7,9 +7,11 @@ import {
   boolean,
   int,
   mysqlEnum,
+  json,
 } from "drizzle-orm/mysql-core";
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
+import type { ExtractionConfigType } from "@/lib/types";
 
 export const createTable = mysqlTableCreator((name) => name);
 
@@ -22,6 +24,11 @@ export const userTable = mysqlTable("user", {
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });
+
+export const userTableRelations = relations(userTable, ({ many }) => ({
+  parsingTasks: many(parsingTaskTable),
+  extractionConfigs: many(extractionConfigTable),
+}));
 
 // TODO: use only created/extracting/processing/completed/failed as status
 export const parsingTaskTable = mysqlTable("parsing_task", {
@@ -53,7 +60,12 @@ export const parsingTaskTable = mysqlTable("parsing_task", {
 
 export const parsingTaskTableRelations = relations(
   parsingTaskTable,
-  ({ many }) => ({
+
+  ({ one, many }) => ({
+    user: one(userTable, {
+      fields: [parsingTaskTable.userId],
+      references: [userTable.id],
+    }),
     parceableFiles: many(parseableFileTable, {
       relationName: "parseableFiles",
     }),
@@ -86,6 +98,28 @@ export const parseableFileTableRelations = relations(
       fields: [parseableFileTable.parsingTaskId],
       references: [parsingTaskTable.id],
       relationName: "parseableFiles",
+    }),
+  }),
+);
+
+export const extractionConfigTable = mysqlTable("extraction_config", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(createId),
+  name: varchar("name", { length: 128 }).notNull(),
+  config: json().$type<ExtractionConfigType>().notNull(),
+  prompt: text("prompt").notNull(),
+  userId: varchar("user_id", { length: 36 })
+    .notNull()
+    .references(() => userTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+});
+
+export const extractionConfigTableRelations = relations(
+  extractionConfigTable,
+  ({ one }) => ({
+    user: one(userTable, {
+      fields: [extractionConfigTable.userId],
+      references: [userTable.id],
     }),
   }),
 );

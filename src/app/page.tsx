@@ -15,18 +15,23 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 // CONSTANTS
 import { features, pricingPlans, faqs } from "@/constants";
 // ICONS
 import { Check, FileText, Upload, Zap, Shield, BarChart } from "lucide-react";
+import {
+  LoggedInStatus,
+  LoggedInStatusSkeleon,
+} from "@/components/auth/logged-in-status";
+import { Suspense } from "react";
 
 export default function LandingPage() {
   return (
     <div className="bg-background min-h-screen font-sans">
       {/* Header */}
       <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur-sm">
-        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-0">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <div className="flex items-center space-x-2">
             <FileText className="text-primary h-6 w-6" />
             <span className="font-display text-xl font-bold">ResumeParser</span>
@@ -51,19 +56,10 @@ export default function LandingPage() {
               Pricing
             </Link>
           </nav>
-          <div className="flex items-center space-x-4">
-            <Link href="/auth/login" className={buttonVariants()}>
-              Log In
-            </Link>
-            <Link
-              href="/auth/signup"
-              className={buttonVariants({
-                variant: "outline",
-              })}
-            >
-              Sign Up
-            </Link>
-          </div>
+
+          <Suspense fallback={<LoggedInStatusSkeleon />}>
+            <LoggedInStatus />
+          </Suspense>
         </div>
       </header>
 

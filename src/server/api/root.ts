@@ -1,5 +1,6 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { parsingTaskRouter } from "./routers/parsing-task";
+import { extractionConfigRouter } from "./routers/extraction-config";
 
 /**
  * This is the primary router for your server.
@@ -8,6 +9,7 @@ import { parsingTaskRouter } from "./routers/parsing-task";
  */
 export const appRouter = createTRPCRouter({
   parsingTask: parsingTaskRouter,
+  extractionConfig: extractionConfigRouter,
 });
 
 // export type definition of API

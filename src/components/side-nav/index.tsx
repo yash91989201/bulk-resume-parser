@@ -56,7 +56,7 @@ export const SideNav = () => {
 
   return (
     <>
-      <div className="flex min-w-48 flex-col gap-3">
+      <div className="flex min-w-60 flex-col gap-3">
         <nav className="flex flex-col gap-2">
           {navLinks.map((link) => (
             <Link
