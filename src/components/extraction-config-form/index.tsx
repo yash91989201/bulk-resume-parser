@@ -46,7 +46,9 @@ export const ExtractionConfigForm = () => {
     },
   });
 
-  const { control, watch, handleSubmit, reset } = form;
+  const { control, watch, handleSubmit, reset, setValue, formState } = form;
+
+  console.log(formState.errors);
 
   const selectedConfigVersion = watch("config.version");
 
@@ -94,16 +96,35 @@ export const ExtractionConfigForm = () => {
           name="config.version"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormLabel>Select schema</FormLabel>
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  setValue("config.fields", []);
+                  if (value === "v0") {
+                    setValue("config.name", "Simple Config");
+                    setValue(
+                      "config.description",
+                      "Basic resume extraction config",
+                    );
+                  } else {
+                    setValue("config.name", "Detailed Config");
+                    setValue(
+                      "config.description",
+                      "Detailed resume extraction config",
+                    );
+                  }
+                }}
+                defaultValue={field.value}
+              >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a verified email to display" />
+                    <SelectValue placeholder="Select a config schema" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="v0">Simple Schema</SelectItem>
-                  <SelectItem value="v1">Detaild Schema</SelectItem>
+                  <SelectItem value="v1">Detailed Schema</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -113,7 +134,7 @@ export const ExtractionConfigForm = () => {
 
         <ExtractionConfigSection configVersion={selectedConfigVersion} />
 
-        <Button>Save configuration</Button>
+        <Button className="w-fit">Save configuration</Button>
       </form>
     </Form>
   );

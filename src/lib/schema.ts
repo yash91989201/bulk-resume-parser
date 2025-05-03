@@ -142,14 +142,16 @@ export const KeywordDetectionRuleSchema = z.object({
 export const SectionDetectionRuleSchema = z.object({
   type: z.literal("section"),
   rule: z.object({
-    section_header: z.array(z.string()),
+    section_headers: z.array(z.string()),
     extraction_strategy: z.enum(["first_occurrence", "most_recent"]).optional(),
   }),
 });
 
 export const CustomDetectionRuleSchema = z.object({
   type: z.literal("custom"),
-  rule: z.string(),
+  rule: z.object({
+    prompt: z.string(),
+  }),
 });
 
 export const DetectionRuleSchema = z.discriminatedUnion("type", [
@@ -253,8 +255,8 @@ export const FieldOutputSchema = z.object({
 export const FieldConfigSchema = BaseFieldConfigSchema.extend({
   description: z.string().optional(),
   note: z.string().optional(),
-  required: z.boolean().optional(),
-  default_value: z.any().optional(),
+  required: z.boolean(),
+  default_value: z.string(),
   detection_schema: z
     .object({
       rules: z.array(DetectionRuleSchema),
