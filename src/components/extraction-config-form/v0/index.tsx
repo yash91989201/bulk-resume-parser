@@ -6,11 +6,11 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from "@/ui/form";
+import { Input } from "@/ui/input";
+import { Button } from "@/ui/button";
 import { Plus } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/ui/textarea";
 
 export const V0ConfigForm = () => {
   const { control } = useFormContext<ExtractionConfigFormType>();

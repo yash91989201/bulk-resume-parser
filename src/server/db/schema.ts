@@ -38,7 +38,7 @@ export const parsingTaskTable = mysqlTable("parsing_task", {
     "created",
     "extracting",
     "converting",
-    "extracting_info",
+    "parsing",
     "aggregating",
     "completed",
     "failed",

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/ui/button";
 import {
   Banknote,
   CircleGauge,
   HelpCircle,
   LayoutDashboard,
   LayoutPanelTop,
+  ListChecks,
   Settings,
   UserRound,
 } from "lucide-react";
@@ -18,6 +19,11 @@ const navLinks = [
     href: "/dashboard",
     label: "Dashboard",
     Icon: LayoutDashboard,
+  },
+  {
+    href: "/dashboard/parsing-tasks",
+    label: "Parsing Tasks",
+    Icon: ListChecks,
   },
   {
     href: "/dashboard/extraction-config",

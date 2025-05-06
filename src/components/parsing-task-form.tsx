@@ -22,7 +22,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
+} from "@/ui/card";
 import {
   FormMessage,
   FormControl,
@@ -30,9 +30,9 @@ import {
   FormLabel,
   FormField,
   Form,
-} from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@/ui/form";
+import { Button } from "@/ui/button";
+import { Input } from "@/ui/input";
 // CUSTOM COMPONENTS
 import { MultiFileDropzone } from "@/components/multi-file-dropzone";
 // TYPES

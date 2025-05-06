@@ -1,6 +1,6 @@
 // UTILS
 import { extractionConfigTable } from "@/server/db/schema";
-import { generateExtractionPrompt } from "@lib/extraction-config";
+import { generateExtractionPrompt } from "@/lib/extraction-config";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 // SCHEMAS
 import { ExtractionConfigFormSchema } from "@/lib/schema";

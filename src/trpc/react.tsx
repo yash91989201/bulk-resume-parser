@@ -7,7 +7,7 @@ import {
   createTRPCClient,
 } from "@trpc/client";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
-import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
+import { type inferRouterInputs, type inferRouterOutputs } from "@/trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
 

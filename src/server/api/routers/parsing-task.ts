@@ -82,7 +82,7 @@ export const parsingTaskRouter = createTRPCRouter({
       };
     }),
 
-  get: protectedProcedure.query(({ ctx }) => {
+  getAll: protectedProcedure.query(({ ctx }) => {
     return ctx.db.query.parsingTaskTable.findMany();
   }),
 });

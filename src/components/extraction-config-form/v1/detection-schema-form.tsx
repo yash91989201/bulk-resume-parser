@@ -7,16 +7,16 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@/ui/form";
+import { Input } from "@/ui/input";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@ui/select";
-import { Button } from "@ui/button";
+} from "@/ui/select";
+import { Button } from "@/ui/button";
 
 export const DetectionSchemaForm = ({ index }: { index: number }) => {
   const { control, watch, setValue } =

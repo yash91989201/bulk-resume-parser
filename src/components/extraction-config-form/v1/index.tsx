@@ -6,11 +6,11 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from "@/ui/form";
+import { Input } from "@/ui/input";
+import { Button } from "@/ui/button";
 import { Plus } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/ui/checkbox";
 import { DetectionSchemaForm } from "./detection-schema-form";
 
 export const V1ConfigForm = () => {

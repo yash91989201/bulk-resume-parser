@@ -1,7 +1,10 @@
-import {
-  type ExtractionConfigV0Type,
-  type ExtractionConfigV1Type,
-  type ExtractionConfigType,
+import type {
+  ExtractionConfigV0Type,
+  ExtractionConfigV1Type,
+  ExtractionConfigType,
+  DetectionRuleType,
+  SanitizationRuleType,
+  ValidationRuleType,
 } from "./types";
 
 export const generateExtractionPrompt = (config: ExtractionConfigType) => {
@@ -81,6 +84,150 @@ RESUME TEXT:
 `;
 };
 
-const generateV1Prompt = (config: ExtractionConfigV1Type) => {
-  return config.version;
+// ----------------------------------------------------------------------------------------------------------------------------------
+
+const detectionRuleToText = (rule: DetectionRuleType): string => {
+  switch (rule.type) {
+    case "regex":
+      const { pattern, flags, target = "all", group = 0 } = rule.rule;
+      return `– Use regex \`${pattern}\`${flags ? ` with flags \`${flags}\`` : ""} to extract ${target} match${target === "all" ? "es" : ""} (group ${group}).`;
+    case "keyword":
+      const {
+        keywords,
+        context_window = 0,
+        strategy = "proximity",
+      } = rule.rule;
+      return `– Look for keywords [${keywords.join(", ")}] using ${strategy} within ±${context_window} words.`;
+    case "section":
+      const { section_headers, extraction_strategy = "first_occurrence" } =
+        rule.rule;
+      return `– In sections titled [${section_headers.join(", ")}], take the ${extraction_strategy === "first_occurrence" ? "first occurrence" : "most recent"}.`;
+    case "custom":
+      return `– ${rule.rule.prompt}`;
+  }
 };
+
+const validationRuleToText = (rule: ValidationRuleType): string => {
+  switch (rule.type) {
+    case "regex":
+      const { pattern, error_message } = rule.rule;
+      return `– Must match regex \`${pattern}\`${error_message ? `; else: "${error_message}"` : ""}.`;
+    case "length":
+      const { min, max, error_message: lenMsg } = rule.rule;
+      return `– Length must be${min != null ? ` ≥ ${min}` : ""}${max != null ? ` and ≤ ${max}` : ""}${lenMsg ? `; else: "${lenMsg}"` : ""}.`;
+    case "allowed_values":
+      const { values, case_sensitive } = rule.rule;
+      return `– Value must be one of [${values.join(", ")}]${case_sensitive ? " (case‑sensitive)" : ""}.`;
+    case "custom":
+      return `– ${rule.rule}`;
+    default:
+      return "";
+  }
+};
+
+const sanitizationRuleToText = (rule: SanitizationRuleType): string => {
+  switch (rule.type) {
+    case "regex_replace":
+      const { pattern, replacement, flags } = rule.rule;
+      return `– Replace \`${pattern}\` → \`${replacement}\`${flags ? ` with flags \`${flags}\`` : ""}.`;
+    case "trim":
+      const chars = rule.rule.characters ?? "\\s";
+      return `– Trim characters [${chars}].`;
+    case "format":
+      const { template, components } = rule.rule;
+      return `– Format with template "${template}", components ${JSON.stringify(components)}.`;
+    case "custom":
+      return `– ${rule.rule}`;
+  }
+};
+
+export function generateV1Prompt(config: ExtractionConfigV1Type): string {
+  // 1) ROLE
+  const role = `You are an expert resume parser and data-extraction engine, with deep experience in information extraction, data normalization, and schema-driven validation.`;
+
+  // 2) CONTEXT
+  const context = `You will receive a plain-text resume. Your goal is to extract every field defined below—applying detection, then validation, then sanitization—so that the final output is a strictly valid JSON object conforming exactly to the specified output schema.`;
+
+  // 3) ACTION
+  const action = `Analyze the resume with maximum precision. For each field, run all detection rules in order, validate each candidate value, apply sanitization rules, then normalization mappings. Finally, return ONLY the JSON object—no additional text or commentary.`;
+
+  // 4) Per-field instructions
+  const fieldsInstructions = config.fields
+    .map((field) => {
+      const lines: string[] = [];
+
+      // Header
+      lines.push(`• **${field.label ?? field.key}** (\`${field.key}\`)`);
+      if (field.description)
+        lines.push(`  – Description: ${field.description}`);
+      if (field.note) lines.push(`  – Note: ${field.note}`);
+
+      // Detection rules
+      if (field.detection_schema) {
+        lines.push(`  – Detection rules:`);
+        field.detection_schema.rules.forEach((r) =>
+          lines.push(`    ${detectionRuleToText(r)}`),
+        );
+      }
+
+      // Validation rules
+      if (field.validation_schema) {
+        lines.push(`  – Validation rules:`);
+        field.validation_schema.rules.forEach((r) =>
+          lines.push(`    ${validationRuleToText(r)}`),
+        );
+      }
+
+      // Sanitization rules
+      if (field.sanitization_schema) {
+        lines.push(`  – Sanitization rules:`);
+        field.sanitization_schema.rules.forEach((r) =>
+          lines.push(`    ${sanitizationRuleToText(r)}`),
+        );
+      }
+
+      // Required / default
+      lines.push(`  – Required: ${field.required}`);
+      lines.push(`  – Default: ${field.default_value}`);
+
+      // Output schema
+      if (field.output_schema) {
+        const out = field.output_schema;
+        lines.push(`  – Output schema:`);
+        lines.push(`    • Type: ${out.data_type}`);
+        if (out.format) lines.push(`    • Format: ${out.format}`);
+        if (out.cardinality)
+          lines.push(`    • Cardinality: ${out.cardinality}`);
+        if (out.examples)
+          lines.push(`    • Examples: ${out.examples.join(", ")}`);
+        if (out.normalization) {
+          const m = out.normalization.rule;
+          lines.push(
+            `    • Normalization: map [${m.source.join(", ")}] → ${JSON.stringify(
+              m.target,
+            )}`,
+          );
+        }
+      }
+
+      return lines.join("\n");
+    })
+    .join("\n\n");
+
+  // 5) Strict JSON template
+  const template: Record<string, unknown> = {};
+  for (const field of config.fields) {
+    template[field.key] = field.default_value || null;
+  }
+  const templateJson = JSON.stringify(template, null, 2);
+
+  // 6) Assemble prompt
+  return [
+    `Role:\n${role}`,
+    `Context:\n${context}`,
+    `Action:\n${action}`,
+    `Instructions:\nExtract and process each field in this exact sequence: detection → validation → sanitization → normalization. Return exactly the JSON object below—no extra text.\n\nFields to extract:\n${fieldsInstructions}`,
+    `Strict output format:\n\`\`\`json\n${templateJson}\n\`\`\``,
+    `Resume text:\n{{resume_content}}`,
+  ].join("\n\n");
+}

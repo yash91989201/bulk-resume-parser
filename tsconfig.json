@@ -24,13 +24,10 @@
       }
     ],
     "incremental": true,
-    /* Path Aliases */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@ui/*": ["./src/components/ui/*"],
-      "@lib/*": ["./src/lib/*"]
+      "@/ui/*": ["./src/components/ui/*"]
     }
   },
   "include": [

@@ -11,7 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@ui/form";
+} from "@/ui/form";
 import { type ExtractionConfigFormType } from "@/lib/types";
 import { ExtractionConfigFormSchema } from "@/lib/schema";
 import {
@@ -20,10 +20,10 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@ui/select";
-import { Input } from "@ui/input";
+} from "@/ui/select";
+import { Input } from "@/ui/input";
 import { ExtractionConfigSection } from "./extraction-config-section";
-import { Button } from "@ui/button";
+import { Button } from "@/ui/button";
 import { useTRPC } from "@/trpc/react";
 import { useMutation } from "@tanstack/react-query";
 
@@ -134,7 +134,7 @@ export const ExtractionConfigForm = () => {
 
         <ExtractionConfigSection configVersion={selectedConfigVersion} />
 
-        <Button className="w-fit">Save configuration</Button>
+        <Button>Save configuration</Button>
       </form>
     </Form>
   );

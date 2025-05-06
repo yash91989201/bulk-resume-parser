@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 // UTILS
-import { signUp } from "@/lib/auth-client";
-import { buttonVariants } from "@/components/ui/button";
+import { signUp } from "@/lib/auth";
+import { buttonVariants } from "@/ui/button";
 // SCHEMAS
 import { SignupSchema } from "@/lib/schema";
 // TYPES
@@ -149,11 +149,11 @@ export function SignupForm() {
           </form>
         </Form>
       </CardContent>
-      <CardFooter className="justify-center text-sm text-muted-foreground">
+      <CardFooter className="text-muted-foreground justify-center text-sm">
         Already have an account?&nbsp;
         <Link
           href="/auth/login"
-          className={cn(buttonVariants({ variant: "link" }),"px-0")}
+          className={cn(buttonVariants({ variant: "link" }), "px-0")}
         >
           Log in
         </Link>

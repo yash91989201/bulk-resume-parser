@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 // UTILS
-import { signIn } from "@/lib/auth-client";
+import { signIn } from "@/lib/auth";
 // SCHEMAS
 import { LoginSchema } from "@/lib/schema";
 // TYPES
@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card";
+} from "@/ui/card";
 import {
   Form,
   FormControl,
@@ -27,9 +27,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button, buttonVariants } from "@/components/ui/button";
+} from "@/ui/form";
+import { Input } from "@/ui/input";
+import { Button, buttonVariants } from "@/ui/button";
 // ICONS
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -113,7 +113,7 @@ export function LoginForm() {
           </form>
         </Form>
       </CardContent>
-      <CardFooter className="justify-center text-sm text-muted-foreground">
+      <CardFooter className="text-muted-foreground justify-center text-sm">
         Don’t have an account?&nbsp;
         <Link
           href="/auth/signup"

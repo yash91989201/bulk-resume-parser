@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 // UTLS
 import { auth } from "@/server/utils/auth";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/ui/skeleton";
 
 export async function LoggedInStatus() {
   const session = await auth.api.getSession({
