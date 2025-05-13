@@ -5,7 +5,6 @@ import * as Minio from "minio";
 import { env } from "@/env.js";
 // TYPES
 import type internal from "stream";
-import type { Readable } from "stream";
 // CONSTANS
 import { STORAGE_BUCKETS } from "@/constants";
 
@@ -15,23 +14,6 @@ export const isBucketNameValid = (
   return Object.values(STORAGE_BUCKETS).includes(
     bucketName as (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS],
   );
-};
-
-export const nodeStreamToWebReadable = (
-  nodeStream: Readable,
-): ReadableStream<Uint8Array> => {
-  return new ReadableStream({
-    start(controller) {
-      nodeStream.on("data", (chunk) => {
-        controller.enqueue(new Uint8Array(chunk)); // Ensure chunk is Uint8Array
-      });
-      nodeStream.on("end", () => controller.close());
-      nodeStream.on("error", (err) => controller.error(err));
-    },
-    cancel() {
-      nodeStream.destroy();
-    },
-  });
 };
 
 export const s3Client = new Minio.Client({

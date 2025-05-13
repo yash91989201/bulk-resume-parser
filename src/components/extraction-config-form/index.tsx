@@ -46,9 +46,7 @@ export const ExtractionConfigForm = () => {
     },
   });
 
-  const { control, watch, handleSubmit, reset, setValue, formState } = form;
-
-  console.log(formState.errors);
+  const { control, watch, handleSubmit, reset, setValue } = form;
 
   const selectedConfigVersion = watch("config.version");
 
