@@ -4,7 +4,7 @@ import { db } from "@/server/db";
 // DB TABLES
 import { parseableFileTable } from "@/server/db/schema";
 // SCHEMAS
-import { ParseableFilesInsertSchema } from "@/lib/schema";
+import { ParseableFilesInputSchema } from "@/lib/schema";
 // TYPES
 import type { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
@@ -39,7 +39,7 @@ export const POST = async (req: NextRequest) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const body = await req.json();
-    const reqJsonValidation = ParseableFilesInsertSchema.safeParse(body);
+    const reqJsonValidation = ParseableFilesInputSchema.safeParse(body);
 
     if (!reqJsonValidation.success) {
       return NextResponse.json(

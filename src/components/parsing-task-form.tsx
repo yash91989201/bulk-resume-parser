@@ -5,13 +5,7 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 // UTILS
-import {
-  uploadTaskFiles,
-  createParseableFiles,
-  getBucketFilesInfo,
-  MAX_FILE_SIZE_S3_ENDPOINT,
-  formatFileSize,
-} from "@/lib/utils";
+import { uploadTaskFiles, formatFileSize } from "@/lib/utils";
 import { useTRPC } from "@/trpc/react";
 // SCHEMAS
 import { ParsingTaskFormSchema } from "@/lib/schema";
@@ -37,9 +31,9 @@ import { Input } from "@/ui/input";
 import { MultiFileDropzone } from "@/components/multi-file-dropzone";
 // TYPES
 import type { SubmitHandler } from "react-hook-form";
-import type { ParseableFileInsertType, ParsingTaskFormType } from "@/lib/types";
+import type { ParsingTaskFormType } from "@/lib/types";
 // CONSTANTS
-import { ACCEPTED_FILE_TYPES, STORAGE_BUCKETS } from "@/constants";
+import { ACCEPTED_ARCHIVE_TYPES, MAX_FILE_SIZE_S3_ENDPOINT } from "@/constants";
 
 export const ParsingTaskForm = () => {
   const api = useTRPC();
@@ -49,6 +43,14 @@ export const ParsingTaskForm = () => {
 
   const { mutateAsync: startParsing } = useMutation(
     api.parsingTask.startParsing.mutationOptions(),
+  );
+
+  const { mutateAsync: createParseableFiles } = useMutation(
+    api.parseableFiles.create.mutationOptions(),
+  );
+
+  const { mutateAsync: getTaskFileUploadUrl } = useMutation(
+    api.presignedUrl.getTaskFileUploadUrl.mutationOptions(),
   );
 
   const parsingTaskForm = useForm<ParsingTaskFormType>({
@@ -75,7 +77,7 @@ export const ParsingTaskForm = () => {
       }));
 
       const allArchiveFiles = filesMetadata.every((file) =>
-        ACCEPTED_FILE_TYPES.ARCHIVE_FILES.includes(file.contentType),
+        ACCEPTED_ARCHIVE_TYPES.includes(file.contentType),
       );
 
       const createParsingTaskRes = await createParsingTask({
@@ -89,12 +91,10 @@ export const ParsingTaskForm = () => {
 
       const taskId = createParsingTaskRes.data.taskId;
 
-      const bucketFilesInfo = await getBucketFilesInfo({
+      const { bucketFilesInfo } = await getTaskFileUploadUrl({
         taskId,
         filesMetadata: filesMetadata,
-        bucketName: allArchiveFiles
-          ? STORAGE_BUCKETS.ARCHIVE_FILES
-          : STORAGE_BUCKETS.PARSEABLE_FILES,
+        bucketName: allArchiveFiles ? "archive-files" : "parseable-files",
       });
 
       await uploadTaskFiles({
@@ -110,14 +110,12 @@ export const ParsingTaskForm = () => {
       });
 
       if (!allArchiveFiles) {
-        const parseableFiles: ParseableFileInsertType[] = bucketFilesInfo.map(
-          (info) => ({
+        await createParseableFiles({
+          parseableFiles: bucketFilesInfo.map((info) => ({
             ...info,
             parsingTaskId: taskId,
-          }),
-        );
-
-        await createParseableFiles(parseableFiles);
+          })),
+        });
       }
 
       const startParsingRes = await startParsing({

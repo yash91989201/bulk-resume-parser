@@ -137,13 +137,6 @@ export const faqs = [
   },
 ] as const;
 
-export const STORAGE_BUCKETS = {
-  AGGREGATED_RESULTS: "aggregated-results",
-  ARCHIVE_FILES: "archive-files",
-  PARSEABLE_FILES: "parseable-files",
-  PROCESSED_TXT_FILES: "processed-txt-files",
-} as const;
-
 export const QUEUES = {
   EXTRACT_ARCHIVE: "extract_archive_queue",
   IMG_TO_TXT: "img_to_txt_queue",
@@ -153,29 +146,26 @@ export const QUEUES = {
   CONVERSION_DIRECTOR: "conversion_director_queue",
 } as const;
 
-export const MAX_FILE_SIZE_NEXTJS_ROUTE = 4;
-export const MAX_FILE_SIZE_S3_ENDPOINT = 100;
-export const FILE_NUMBER_LIMIT = 10;
+export const MAX_FILE_SIZE_S3_ENDPOINT = 1000;
 
-export const ACCEPTED_FILE_TYPES = {
-  FILES: [
-    "image/png",
-    "image/jpg",
-    "image/jpeg",
-    "image/webp",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/pdf",
-  ],
-  ARCHIVE_FILES: [
-    "application/zip",
-    "application/vnd.rar",
-    "application/x-rar",
-    "application/x-zip-compressed",
-    "application/x-7z-compressed",
-    "application/x-rar-compressed",
-  ],
-};
+export const ACCEPTED_FILE_TYPES = [
+  "image/png",
+  "image/jpg",
+  "image/jpeg",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/pdf",
+];
+
+export const ACCEPTED_ARCHIVE_TYPES = [
+  "application/zip",
+  "application/vnd.rar",
+  "application/x-rar",
+  "application/x-zip-compressed",
+  "application/x-7z-compressed",
+  "application/x-rar-compressed",
+];
 
 export const ACCEPTED_IMAGE_TYPES = [
   "image/png",
@@ -184,7 +174,7 @@ export const ACCEPTED_IMAGE_TYPES = [
   "image/webp",
 ];
 
-export const ACCEPTED_WORD_DOCUMENT_TYPES = [
+export const ACCEPTED_DOCUMENT_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];

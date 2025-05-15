@@ -1,27 +1,19 @@
-import { clsx, type ClassValue } from "clsx";
+import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type {
-  BucketFileInfoType,
-  FileMetadataType,
-  ParseableFileInsertType,
-} from "@/lib/types";
-import {
-  ACCEPTED_IMAGE_TYPES,
-  ACCEPTED_WORD_DOCUMENT_TYPES,
-} from "@/constants";
+// TYPES
+import type { ClassValue } from "clsx";
+import type { BucketFileInfoType } from "@/lib/types";
+// CONSTANTS
+import { ACCEPTED_IMAGE_TYPES, ACCEPTED_DOCUMENT_TYPES } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const MAX_FILE_SIZE_NEXTJS_ROUTE = 4;
-export const MAX_FILE_SIZE_S3_ENDPOINT = 1024;
-export const FILE_NUMBER_LIMIT = 10;
-
 export const getBucketFilePrefix = (contentType: string) => {
   if (ACCEPTED_IMAGE_TYPES.includes(contentType)) {
     return "image";
-  } else if (ACCEPTED_WORD_DOCUMENT_TYPES.includes(contentType)) {
+  } else if (ACCEPTED_DOCUMENT_TYPES.includes(contentType)) {
     return "word-document";
   } else if (contentType === "application/pdf") {
     return "pdf";
@@ -60,70 +52,6 @@ export function formatSecondsToMinutes(seconds: number): string {
 
   return timeStr;
 }
-
-/**
- *
- * @param files array of files
- * @returns true if all files are valid
- */
-export function validateFiles(
-  files: FileMetadataType[],
-  maxSizeMB: number,
-): string | undefined {
-  // check if all files in total are less than 100 MB
-  const totalFileSize = files.reduce((acc, file) => acc + file.size, 0);
-  const isFileSizeValid = totalFileSize < maxSizeMB * 1024 * 1024;
-  if (!isFileSizeValid) {
-    return `Total file size should be less than ${maxSizeMB} MB`;
-  }
-  if (files.length > FILE_NUMBER_LIMIT) {
-    return `You can upload maximum ${FILE_NUMBER_LIMIT} files at a time`;
-  }
-  return;
-}
-
-/**
- * Create form data from files
- * @param files files to upload
- * @returns form data
- */
-export function createFormData(files: File[]): FormData {
-  const formData = new FormData();
-
-  files.forEach((file) => {
-    formData.append("file", file);
-  });
-
-  return formData;
-}
-
-/**
- * Gets presigned urls for uploading files to bucket
- * @param formData form data with files to upload
- * @returns
- */
-export const getBucketFilesInfo = async ({
-  taskId,
-  bucketName,
-  filesMetadata,
-}: {
-  taskId: string;
-  bucketName: string;
-  filesMetadata: FileMetadataType[];
-}) => {
-  const response = await fetch(
-    `/api/presigned-url/${bucketName}?taskId=${taskId}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ filesMetadata }),
-    },
-  );
-
-  return (await response.json()) as BucketFileInfoType[];
-};
 
 /**
  * Uploads file to bucket directly using presigned url with progress tracking
@@ -200,25 +128,6 @@ export const uploadToBucket = ({
     };
 
     xhr.send(file);
-  });
-};
-
-/**
- * Saves file info in DB
- * @param bucketFilesInfo presigned urls for uploading
- * @returns
- */
-export const createParseableFiles = async (
-  parseableFiles: ParseableFileInsertType[],
-) => {
-  return await fetch(`/api/parseable-files`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      parseableFiles,
-    }),
   });
 };
 

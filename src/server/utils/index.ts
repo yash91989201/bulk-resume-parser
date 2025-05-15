@@ -5,16 +5,6 @@ import * as Minio from "minio";
 import { env } from "@/env.js";
 // TYPES
 import type internal from "stream";
-// CONSTANS
-import { STORAGE_BUCKETS } from "@/constants";
-
-export const isBucketNameValid = (
-  bucketName: string,
-): bucketName is keyof typeof STORAGE_BUCKETS => {
-  return Object.values(STORAGE_BUCKETS).includes(
-    bucketName as (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS],
-  );
-};
 
 export const s3Client = new Minio.Client({
   endPoint: env.S3_ENDPOINT,

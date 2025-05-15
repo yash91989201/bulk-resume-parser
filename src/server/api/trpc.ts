@@ -13,6 +13,8 @@ import { ZodError } from "zod";
 import { db } from "@/server/db";
 import { auth } from "@/server/utils/auth";
 import { headers } from "next/headers";
+import { s3Client } from "../s3";
+import { S3Service } from "../s3/service";
 
 /**
  * 1. CONTEXT
@@ -28,9 +30,11 @@ import { headers } from "next/headers";
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth.api.getSession({ headers: await headers() });
+  const s3 = new S3Service(s3Client);
 
   return {
     db,
+    s3,
     session,
     ...opts,
   };

@@ -20,6 +20,7 @@ import type {
   ValidationRuleSchema,
   SanitizationRuleSchema,
   FieldOutputSchema,
+  S3BucketSchema,
 } from "./schema";
 
 // DB TABLES TYPES
@@ -56,3 +57,5 @@ export type BucketFileInfoType = z.infer<typeof BucketFileInfoSchema>;
 // AUTH TYPES
 export type LoginType = z.infer<typeof LoginSchema>;
 export type SignupType = z.infer<typeof SignupSchema>;
+
+export type S3BucketType = z.infer<typeof S3BucketSchema>;

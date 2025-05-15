@@ -6,7 +6,7 @@ import {
 } from "drizzle-zod";
 // DB TABLES
 import { parsingTaskTable, parseableFileTable } from "@/server/db/schema";
-import { ACCEPTED_FILE_TYPES } from "@/constants";
+import { ACCEPTED_FILE_TYPES, ACCEPTED_ARCHIVE_TYPES } from "@/constants";
 
 // DB TABLES SCHEMAS
 export const ParsingTaskSchema = createSelectSchema(parsingTaskTable);
@@ -15,13 +15,30 @@ export const ParseableFileSchema = createSelectSchema(parseableFileTable);
 // DB TABLES INSERT SCHEMA
 export const ParsingTaskInsertSchema = createInsertSchema(parsingTaskTable);
 export const ParseableFileInsertSchema = createInsertSchema(parseableFileTable);
-export const ParseableFilesInsertSchema = z.object({
+export const ParseableFilesInputSchema = z.object({
   parseableFiles: z.array(ParseableFileInsertSchema),
 });
 
 // DB TABLES UPDATE SCHEMA
 export const ParsingTaskUpdateSchema = createUpdateSchema(parsingTaskTable);
 export const ParseableFileUpdateSchema = createUpdateSchema(parseableFileTable);
+
+export const DeleteParsingTaskInput = z.object({
+  taskId: z.string(),
+});
+
+export const S3BucketSchema = z.enum([
+  "aggregated-results",
+  "archive-files",
+  "parseable-files",
+  "processed-txt-files",
+  "processed-json-files",
+]);
+
+export const BaseProcedureOutputSchema = z.object({
+  status: z.enum(["SUCCESS", "FAILED"]),
+  message: z.string(),
+});
 
 // FORM SCHEMAS
 export const StartParsingInput = z.object({
@@ -47,11 +64,11 @@ export const ParsingTaskFormSchema = z.object({
     .min(1, "At least one file is required")
     .refine((files) => {
       const allNonArchiveFiles = files.every(({ file }) =>
-        ACCEPTED_FILE_TYPES.FILES.includes(file.type),
+        ACCEPTED_FILE_TYPES.includes(file.type),
       );
 
       const allArchiveFiles = files.every(({ file }) =>
-        ACCEPTED_FILE_TYPES.ARCHIVE_FILES.includes(file.type),
+        ACCEPTED_ARCHIVE_TYPES.includes(file.type),
       );
 
       return allNonArchiveFiles || allArchiveFiles;
@@ -72,8 +89,14 @@ export const BucketFileInfoSchema = FileMetadataSchema.extend({
   presignedUrl: z.string(),
 });
 
-export const CreatePresignedUrlApiInput = z.object({
+export const GetTaskFileUploadUrlInput = z.object({
+  taskId: z.string(),
+  bucketName: S3BucketSchema,
   filesMetadata: z.array(FileMetadataSchema),
+});
+
+export const GetTaskFileUploadUrlOutput = z.object({
+  bucketFilesInfo: z.array(BucketFileInfoSchema),
 });
 
 export const CreateParsingTaskInput = z.object({
@@ -102,6 +125,10 @@ export const SignupSchema = z
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
+
+export const GetResultFileUrlInput = z.object({
+  taskId: z.string(),
+});
 
 export const BaseFieldConfigSchema = z.object({
   key: z.string(),

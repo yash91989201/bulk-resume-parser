@@ -1,6 +1,8 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { parsingTaskRouter } from "./routers/parsing-task";
 import { extractionConfigRouter } from "./routers/extraction-config";
+import { presignedUrlRouter } from "./routers/presigned-url";
+import { parseableFilesRouter } from "./routers/parseable-files";
 
 /**
  * This is the primary router for your server.
@@ -10,6 +12,8 @@ import { extractionConfigRouter } from "./routers/extraction-config";
 export const appRouter = createTRPCRouter({
   parsingTask: parsingTaskRouter,
   extractionConfig: extractionConfigRouter,
+  parseableFiles: parseableFilesRouter,
+  presignedUrl: presignedUrlRouter,
 });
 
 // export type definition of API

@@ -88,7 +88,9 @@ export const parseableFileTable = mysqlTable("parseable_file", {
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
   parsingTaskId: varchar("parsing_task_id", { length: 36 })
     .notNull()
-    .references(() => parsingTaskTable.id),
+    .references(() => parsingTaskTable.id, {
+      onDelete: "cascade",
+    }),
 });
 
 export const parseableFileTableRelations = relations(

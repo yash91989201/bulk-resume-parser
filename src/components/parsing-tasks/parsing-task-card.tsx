@@ -1,9 +1,17 @@
 "use client";
-
-import { cn } from "@/lib/utils";
-import { Progress } from "@/ui/progress";
-import { type ParsingTaskType } from "@/lib/types";
 import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+// TYPES
+import type { ParsingTaskType } from "@/lib/types";
+// UTILS
+import { cn } from "@/lib/utils";
+// CUSTOM HOOKS
+import { useTRPC } from "@/trpc/react";
+// UI
+import { Progress } from "@/ui/progress";
+import { Button } from "@/ui/button";
+// ICONS
+import { Loader2 } from "lucide-react";
 
 export const ParsingTaskCard = ({ task }: { task: ParsingTaskType }) => {
   const progressValue = Math.round(
@@ -11,6 +19,43 @@ export const ParsingTaskCard = ({ task }: { task: ParsingTaskType }) => {
   );
 
   const showDownloads = task.taskStatus === "completed";
+
+  const api = useTRPC();
+  const queryClient = useQueryClient();
+  const { isPending: isDownloadSheetPending, mutateAsync } = useMutation(
+    api.presignedUrl.getSheetDownloadUrl.mutationOptions(),
+  );
+
+  const {
+    isPending: isDownloadJsonPending,
+    mutateAsync: downloadJsonMutation,
+  } = useMutation(api.presignedUrl.getSheetDownloadUrl.mutationOptions());
+
+  const {
+    isPending: isDeletingParsingTask,
+    mutateAsync: deleteParsingTaskMutation,
+  } = useMutation(api.parsingTask.delete.mutationOptions());
+
+  const downloadSheet = async () => {
+    if (task.sheetFilePath) {
+      const downloadUrl = await mutateAsync({ taskId: task.id });
+      window.open(downloadUrl, "_blank");
+    }
+  };
+
+  const downloadJson = async () => {
+    if (task.jsonFilePath) {
+      const downloadUrl = await downloadJsonMutation({ taskId: task.id });
+      window.open(downloadUrl, "_blank");
+    }
+  };
+
+  const deleteParsingTask = async () => {
+    const deleteRes = await deleteParsingTaskMutation({ taskId: task.id });
+    if (deleteRes.status === "SUCCESS") {
+      await queryClient.refetchQueries(api.parsingTask.getAll.queryOptions());
+    }
+  };
 
   return (
     <div className="rounded-lg border border-l-4 bg-white p-4 shadow-sm">
@@ -41,25 +86,29 @@ export const ParsingTaskCard = ({ task }: { task: ParsingTaskType }) => {
         {showDownloads && (
           <div className="mt-3 flex flex-wrap gap-2">
             {task.sheetFilePath && (
-              <a
-                href={task.sheetFilePath}
-                download
-                className="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
-              >
-                Download Sheet
-              </a>
+              <Button onClick={() => downloadSheet()} variant="outline">
+                {isDownloadSheetPending && (
+                  <Loader2 className="mr-3 animate-spin" />
+                )}
+                Download sheet
+              </Button>
             )}
+
             {task.jsonFilePath && (
-              <a
-                href={task.jsonFilePath}
-                download
-                className="rounded bg-gray-800 px-3 py-1 text-sm text-white hover:bg-gray-900"
-              >
-                Download JSON
-              </a>
+              <Button onClick={() => downloadJson()} variant="outline">
+                {isDownloadJsonPending && (
+                  <Loader2 className="mr-3 animate-spin" />
+                )}
+                Download sheet
+              </Button>
             )}
           </div>
         )}
+
+        <Button onClick={() => deleteParsingTask()} variant="outline">
+          {isDeletingParsingTask && <Loader2 className="mr-3 animate-spin" />}
+          Delete Task
+        </Button>
       </div>
     </div>
   );

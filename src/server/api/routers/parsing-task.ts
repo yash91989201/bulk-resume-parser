@@ -3,9 +3,14 @@ import { publishToQueue } from "@/server/utils";
 import { parsingTaskTable } from "@/server/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 // SCHEMAS
-import { CreateParsingTaskInput, StartParsingInput } from "@/lib/schema";
+import {
+  CreateParsingTaskInput,
+  StartParsingInput,
+  DeleteParsingTaskInput,
+} from "@/lib/schema";
 // CONSTANTS
 import { QUEUES } from "@/constants";
+import { eq } from "drizzle-orm";
 
 export const parsingTaskRouter = createTRPCRouter({
   create: protectedProcedure
@@ -85,4 +90,24 @@ export const parsingTaskRouter = createTRPCRouter({
   getAll: protectedProcedure.query(({ ctx }) => {
     return ctx.db.query.parsingTaskTable.findMany();
   }),
+
+  delete: protectedProcedure
+    .input(DeleteParsingTaskInput)
+    .mutation(async ({ ctx, input }) => {
+      const deleteQuery = await ctx.db
+        .delete(parsingTaskTable)
+        .where(eq(parsingTaskTable.id, input.taskId));
+
+      if (deleteQuery[0].affectedRows === 0) {
+        return {
+          status: "FAILED",
+          message: "Query failed",
+        };
+      }
+
+      return {
+        status: "SUCCESS",
+        message: "Parsing task deleted",
+      };
+    }),
 });
