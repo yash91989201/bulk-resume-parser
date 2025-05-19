@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/mysql-core";
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
-import type { ExtractionConfigType } from "@/lib/types";
+import type { ExtractionConfigType } from "@/lib/extraction-config/types";
 
 export const createTable = mysqlTableCreator((name) => name);
 

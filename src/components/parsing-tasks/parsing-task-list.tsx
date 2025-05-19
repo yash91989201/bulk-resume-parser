@@ -7,9 +7,7 @@ import { ParsingTaskCard, ParsingTaskCardSkeleton } from "./parsing-task-card";
 export const ParsingTaskList = () => {
   const api = useTRPC();
   const { data: taskList } = useSuspenseQuery(
-    api.parsingTask.getAll.queryOptions(undefined, {
-      refetchInterval: 3000,
-    }),
+    api.parsingTask.getAll.queryOptions(),
   );
 
   return (

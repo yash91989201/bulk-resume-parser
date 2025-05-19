@@ -18,7 +18,12 @@ export default async function Page() {
         </Link>
       </div>
       {extractionConfigs.map((config) => (
-        <ExtractionConfigCard key={config.id} config={config.config} />
+        <ExtractionConfigCard
+          key={config.id}
+          id={config.id}
+          name={config.name}
+          config={config.config}
+        />
       ))}
     </div>
   );

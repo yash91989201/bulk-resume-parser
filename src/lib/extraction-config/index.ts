@@ -1,13 +1,39 @@
+import * as z from "zod";
 import type {
+  DetectionRuleType,
+  ExtractionConfigInputType,
   ExtractionConfigV0Type,
   ExtractionConfigV1Type,
-  ExtractionConfigType,
-  DetectionRuleType,
   SanitizationRuleType,
   ValidationRuleType,
 } from "./types";
 
-export const generateExtractionPrompt = (config: ExtractionConfigType) => {
+export const BaseFieldConfigSchema = z.object({
+  key: z.string(),
+  label: z.string().optional(),
+});
+
+export const fieldConfigLabelToKey = (label: string): string => {
+  return (
+    label
+      .trim()
+      .toLowerCase()
+      // 1️⃣ replace any whitespace (space, tab, newline) with “_”
+      .replace(/\s+/g, "_")
+      // 2️⃣ remove everything except letters, digits, or “_”
+      .replace(/[^a-z0-9_]/g, "")
+      // 3️⃣ collapse multiple underscores into one
+      .replace(/_+/g, "_")
+      // 3️⃣ collapse multiple hyphens into one
+      .replace(/-+/g, "-")
+      // 4️⃣ strip leading or trailing underscores
+      .replace(/^_+|_+$/g, "")
+  );
+};
+
+export const generateExtractionPrompt = (
+  config: ExtractionConfigInputType["config"],
+) => {
   switch (config.version) {
     case "v0":
       return generateV0Prompt(config);
@@ -25,12 +51,12 @@ const generateV0Prompt = (config: ExtractionConfigV0Type) => {
   `;
 
   const context = `
-    You will be provided with a resume text that needs precise information extraction according to strict formatting rules. 
+    You will be provided with a resume text that needs precise information extraction according to strict formatting rules.
     The extracted data must maintain professional terminology standards and comply with technical validation requirements.
   `;
 
   const action = `
-    Analyze the resume text with maximum attention to detail and extract specified fields in exact required formats. 
+    Analyze the resume text with maximum attention to detail and extract specified fields in exact required formats.
     Return ONLY a strictly valid JSON object following all rules and without any explanatory text.
   `;
 

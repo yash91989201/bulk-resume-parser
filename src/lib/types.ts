@@ -11,15 +11,6 @@ import type {
   ParsingTaskFormSchema,
   FileMetadataSchema,
   BucketFileInfoSchema,
-  ExtractionConfigFormSchema,
-  ExtractionConfigSchema,
-  ExtractionConfigV0Schema,
-  ExtractionConfigV1Schema,
-  FieldConfigSchema,
-  DetectionRuleSchema,
-  ValidationRuleSchema,
-  SanitizationRuleSchema,
-  FieldOutputSchema,
   S3BucketSchema,
 } from "./schema";
 
@@ -37,18 +28,6 @@ export type ParseableFileUpdateType = z.infer<typeof ParseableFileUpdateSchema>;
 
 // FORM TYPES
 export type ParsingTaskFormType = z.infer<typeof ParsingTaskFormSchema>;
-
-export type ExtractionConfigType = z.infer<typeof ExtractionConfigSchema>;
-export type FieldConfigV1Type = z.infer<typeof FieldConfigSchema>;
-export type DetectionRuleType = z.infer<typeof DetectionRuleSchema>;
-export type ValidationRuleType = z.infer<typeof ValidationRuleSchema>;
-export type SanitizationRuleType = z.infer<typeof SanitizationRuleSchema>;
-export type FieldOutputSchemaType = z.infer<typeof FieldOutputSchema>;
-export type ExtractionConfigV0Type = z.infer<typeof ExtractionConfigV0Schema>;
-export type ExtractionConfigV1Type = z.infer<typeof ExtractionConfigV1Schema>;
-export type ExtractionConfigFormType = z.infer<
-  typeof ExtractionConfigFormSchema
->;
 
 // OTHER TYPES
 export type FileMetadataType = z.infer<typeof FileMetadataSchema>;
