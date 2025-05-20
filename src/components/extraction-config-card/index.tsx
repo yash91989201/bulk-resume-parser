@@ -1,9 +1,7 @@
 "use client";
 
-import { useTRPC } from "@/trpc/react";
-// TYPES
 import type { ExtractionConfigType } from "@/lib/extraction-config/types";
-// UI
+import { useTRPC } from "@/trpc/react";
 import {
   Card,
   CardContent,

@@ -76,7 +76,7 @@ export const ExtractionConfigV0Form = () => {
     if (response.status === "SUCCESS") {
       toast.success(response.message);
 
-      router.push("/dashboar/extraction-config");
+      router.push("/dashboard/extraction-config");
     } else {
       toast.error(response.message);
     }
