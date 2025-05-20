@@ -5,6 +5,8 @@ export const BaseFieldConfigSchema = z.object({
 
   label: z
     .string()
+    .min(6, { message: "Min. length 6 letters" })
+    .max(12, { message: "Max. length 12 letters" })
     .regex(/^[a-zA-Z0-9 _-]+$/, {
       message:
         "Label may include letters, numbers, spaces, underscores, or hyphens—no other special characters.",
@@ -16,12 +18,20 @@ export const ExtractionConfigV0Schema = z.object({
   version: z.literal("v0"),
   name: z.literal("Simple Config"),
   description: z.literal("Basic resume extraction config"),
-  fields: z.array(
-    BaseFieldConfigSchema.extend({
-      prompt: z.string(),
-      example: z.string(),
-    }),
-  ),
+  fields: z
+    .array(
+      BaseFieldConfigSchema.extend({
+        prompt: z
+          .string()
+          .min(12, { message: "Min. length 12 letters" })
+          .max(60, { message: "Max. length 60 letters" }),
+        example: z
+          .string()
+          .min(12, { message: "Min. length 12 letters" })
+          .max(60, { message: "Max. length 60 letters" }),
+      }),
+    )
+    .min(1, { message: "Config should have at least 1 field spec" }),
 });
 
 export const ExtractionConfigV0FormSchema = z.object({

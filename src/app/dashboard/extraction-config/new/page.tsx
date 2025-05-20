@@ -7,8 +7,8 @@ import { ExtractionConfigV1Form } from "@/components/extraction-config-form/v1";
 export default function Page() {
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-xl font-bold">Create extraction config</h1>
-      <Tabs defaultValue="v0-config" className="w-[400px]">
+      <h1 className="text-3xl font-bold">Create extraction config</h1>
+      <Tabs defaultValue="v0-config">
         <TabsList>
           <TabsTrigger value="v0-config">V0 Config</TabsTrigger>
           <TabsTrigger value="v1-config">V1 Config</TabsTrigger>
