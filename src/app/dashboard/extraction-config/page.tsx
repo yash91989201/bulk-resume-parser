@@ -1,5 +1,5 @@
 import { ExtractionConfigCard } from "@/components/extraction-config-card";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/ui/button";
 import { caller } from "@/trpc/server";
 import Link from "next/link";
 

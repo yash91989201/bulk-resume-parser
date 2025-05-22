@@ -26,8 +26,7 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/ui/*": ["./src/components/ui/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [

@@ -107,7 +107,9 @@ export const AllowedValuesValidationRuleSchema = z.object({
 
 export const CustomValidationRuleSchema = z.object({
   type: z.literal("custom"),
-  rule: z.string(),
+  rule: z.object({
+    prompt: z.string(),
+  }),
 });
 
 export const ValidationRuleSchema = z.discriminatedUnion("type", [
@@ -143,7 +145,9 @@ export const FormatSanitizationRuleSchema = z.object({
 
 export const CustomSanitizationRuleSchema = z.object({
   type: z.literal("custom"),
-  rule: z.string(),
+  rule: z.object({
+    prompt: z.string(),
+  }),
 });
 
 export const SanitizationRuleSchema = z.discriminatedUnion("type", [
@@ -199,6 +203,11 @@ export const ExtractionConfigV1Schema = z.object({
   name: z.literal("Detailed Config"),
   description: z.literal("Detailed resume extraction config"),
   fields: z.array(FieldConfigSchema),
+});
+
+export const ExtractionConfigV1FormSchema = z.object({
+  name: z.string(),
+  config: ExtractionConfigV1Schema,
 });
 
 export const ExtractionConfigSchema = z.discriminatedUnion("version", [

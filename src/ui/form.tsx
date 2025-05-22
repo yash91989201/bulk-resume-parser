@@ -14,7 +14,7 @@ import {
 } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
+import { Label } from "@/ui/label"
 
 const Form = FormProvider
 
@@ -36,15 +36,15 @@ const FormField = <
   ...props
 }: ControllerProps<TFieldValues, TName>) => {
   return (
-    (<FormFieldContext value={{ name: props.name }}>
+    <FormFieldContext.Provider value={{ name: props.name }}>
       <Controller {...props} />
-    </FormFieldContext>)
-  );
+    </FormFieldContext.Provider>
+  )
 }
 
 const useFormField = () => {
-  const fieldContext = React.use(FormFieldContext)
-  const itemContext = React.use(FormItemContext)
+  const fieldContext = React.useContext(FormFieldContext)
+  const itemContext = React.useContext(FormItemContext)
   const { getFieldState } = useFormContext()
   const formState = useFormState({ name: fieldContext.name })
   const fieldState = getFieldState(fieldContext.name, formState)
@@ -77,14 +77,14 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
   const id = React.useId()
 
   return (
-    (<FormItemContext value={{ id }}>
+    <FormItemContext.Provider value={{ id }}>
       <div
         data-slot="form-item"
         className={cn("grid gap-2", className)}
         {...props}
       />
-    </FormItemContext>)
-  );
+    </FormItemContext.Provider>
+  )
 }
 
 function FormLabel({

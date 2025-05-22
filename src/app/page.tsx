@@ -8,14 +8,14 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@/components/ui/card";
+} from "@/ui/card";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+} from "@/ui/accordion";
+import { Button } from "@/ui/button";
 // CONSTANTS
 import { features, pricingPlans, faqs } from "@/constants";
 // ICONS

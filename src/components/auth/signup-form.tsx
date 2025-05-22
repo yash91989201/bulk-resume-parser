@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card";
+} from "@/ui/card";
 import {
   Form,
   FormControl,
@@ -27,9 +27,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from "@/ui/form";
+import { Input } from "@/ui/input";
+import { Button } from "@/ui/button";
 // ICONS
 import { Loader2 } from "lucide-react";
 import Link from "next/link";

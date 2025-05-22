@@ -1,25 +1,11 @@
-// UI
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
-// CUSTOM COMPONENTS
-import { ExtractionConfigV0Form } from "@/components/extraction-config-form/v0";
-import { ExtractionConfigV1Form } from "@/components/extraction-config-form/v1";
+import Link from "next/link";
 
 export default function Page() {
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-3xl font-bold">Create extraction config</h1>
-      <Tabs defaultValue="v0-config">
-        <TabsList>
-          <TabsTrigger value="v0-config">V0 Config</TabsTrigger>
-          <TabsTrigger value="v1-config">V1 Config</TabsTrigger>
-        </TabsList>
-        <TabsContent value="v0-config">
-          <ExtractionConfigV0Form />
-        </TabsContent>
-        <TabsContent value="v1-config">
-          <ExtractionConfigV1Form />
-        </TabsContent>
-      </Tabs>
+      <Link href="/dashboard/extraction-config/new/v0">V0 Config Schema</Link>
+      <Link href="/dashboard/extraction-config/new/v1">V1 Config Schema</Link>
     </div>
   );
 }

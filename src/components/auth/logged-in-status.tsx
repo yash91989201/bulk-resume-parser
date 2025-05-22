@@ -2,7 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 // UTLS
 import { auth } from "@/server/utils/auth";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/ui/button";
 import { Skeleton } from "@/ui/skeleton";
 
 export async function LoggedInStatus() {

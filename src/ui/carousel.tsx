@@ -7,7 +7,7 @@ import useEmblaCarousel, {
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/ui/button"
 
 type CarouselApi = UseEmblaCarouselType[1]
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
@@ -33,7 +33,7 @@ type CarouselContextProps = {
 const CarouselContext = React.createContext<CarouselContextProps | null>(null)
 
 function useCarousel() {
-  const context = React.use(CarouselContext)
+  const context = React.useContext(CarouselContext)
 
   if (!context) {
     throw new Error("useCarousel must be used within a <Carousel />")
@@ -105,7 +105,7 @@ function Carousel({
   }, [api, onSelect])
 
   return (
-    (<CarouselContext
+    <CarouselContext.Provider
       value={{
         carouselRef,
         api: api,
@@ -128,8 +128,8 @@ function Carousel({
       >
         {children}
       </div>
-    </CarouselContext>)
-  );
+    </CarouselContext.Provider>
+  )
 }
 
 function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {

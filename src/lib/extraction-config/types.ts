@@ -10,6 +10,7 @@ import type {
   ExtractionConfigV1Schema,
   ExtractionConfigInputSchema,
   ExtractionConfigSchema,
+  ExtractionConfigV1FormSchema,
 } from "./schema";
 
 export type FieldConfigV1Type = z.infer<typeof FieldConfigSchema>;
@@ -20,6 +21,9 @@ export type FieldOutputSchemaType = z.infer<typeof FieldOutputSchema>;
 export type ExtractionConfigV0Type = z.infer<typeof ExtractionConfigV0Schema>;
 export type ExtractionConfigV0FormType = z.infer<
   typeof ExtractionConfigV0FormSchema
+>;
+export type ExtractionConfigV1FormType = z.infer<
+  typeof ExtractionConfigV1FormSchema
 >;
 export type ExtractionConfigV1Type = z.infer<typeof ExtractionConfigV1Schema>;
 export type ExtractionConfigInputType = z.infer<
