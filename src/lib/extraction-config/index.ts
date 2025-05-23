@@ -145,7 +145,7 @@ const validationRuleToText = (rule: ValidationRuleType): string => {
       const { values, case_sensitive } = rule.rule;
       return `– Value must be one of [${values.join(", ")}]${case_sensitive ? " (case‑sensitive)" : ""}.`;
     case "custom":
-      return `– ${rule.rule}`;
+      return `– ${rule.rule.prompt}`;
     default:
       return "";
   }
@@ -163,7 +163,7 @@ const sanitizationRuleToText = (rule: SanitizationRuleType): string => {
       const { template, components } = rule.rule;
       return `– Format with template "${template}", components ${JSON.stringify(components)}.`;
     case "custom":
-      return `– ${rule.rule}`;
+      return `– ${rule.rule.prompt}`;
   }
 };
 
