@@ -15,12 +15,13 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ExtractionConfigV0FormType } from "@/lib/extraction-config/types";
 
-interface FieldCardV0Props {
+export const FieldCard = ({
+  index,
+  onRemove,
+}: {
   index: number;
   onRemove: () => void;
-}
-
-export function FieldCardV0({ index, onRemove }: FieldCardV0Props) {
+}) => {
   const { control, watch } = useFormContext<ExtractionConfigV0FormType>();
   const [expanded, setExpanded] = useState(true);
 
@@ -37,6 +38,7 @@ export function FieldCardV0({ index, onRemove }: FieldCardV0Props) {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             onClick={() => setExpanded(!expanded)}
@@ -49,6 +51,7 @@ export function FieldCardV0({ index, onRemove }: FieldCardV0Props) {
             )}
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             onClick={onRemove}
@@ -84,48 +87,27 @@ export function FieldCardV0({ index, onRemove }: FieldCardV0Props) {
                   </FormItem>
                 )}
               />
+
               <FormField
-                name={`config.fields.${index}.key`}
+                name={`config.fields.${index}.prompt`}
                 control={control}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Field Key</FormLabel>
+                    <FormLabel>Extraction Prompt</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Auto-generated from label"
+                        placeholder="e.g., Extract the job title from the resume"
                         {...field}
-                        disabled
                       />
                     </FormControl>
                     <FormDescription>
-                      Unique identifier (auto-generated)
+                      Instructions for extracting this data from documents
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            <FormField
-              name={`config.fields.${index}.prompt`}
-              control={control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Extraction Prompt</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Extract the job title from the resume"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Instructions for extracting this data from documents
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               name={`config.fields.${index}.example`}
               control={control}
@@ -151,4 +133,4 @@ export function FieldCardV0({ index, onRemove }: FieldCardV0Props) {
       </div>
     </div>
   );
-}
+};

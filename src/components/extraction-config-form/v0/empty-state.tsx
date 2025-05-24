@@ -1,11 +1,7 @@
 import { Button } from "@/ui/button";
 import { FileText, Plus } from "lucide-react";
 
-interface EmptyStateV0Props {
-  onAdd: () => void;
-}
-
-export function EmptyStateV0({ onAdd }: EmptyStateV0Props) {
+export const EmptyState = ({ onAdd }: { onAdd: () => void }) => {
   return (
     <div className="bg-muted/20 flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center">
       <div className="bg-primary/10 mb-4 rounded-full p-3">
@@ -17,9 +13,9 @@ export function EmptyStateV0({ onAdd }: EmptyStateV0Props) {
         defines what data to extract using a simple label, prompt, and example
         approach.
       </p>
-      <Button onClick={onAdd} size="lg" className="gap-2">
+      <Button type="button" onClick={onAdd} size="lg" className="gap-2">
         <Plus className="h-4 w-4" /> Add Your First Field
       </Button>
     </div>
   );
-}
+};

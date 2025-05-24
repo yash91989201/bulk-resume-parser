@@ -1,4 +1,4 @@
-import { useFormContext, type UseFormReturn } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import {
   FormField,
   FormItem,
@@ -39,6 +39,7 @@ export function RegexRule({ fieldIndex, ruleIndex, onRemove }: RegexRuleProps) {
           <h4 className="text-sm font-medium">Regex Rule</h4>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onRemove}

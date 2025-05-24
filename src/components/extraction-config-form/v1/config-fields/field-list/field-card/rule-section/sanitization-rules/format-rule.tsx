@@ -66,6 +66,7 @@ export function FormatRuleForm({
           <h4 className="text-sm font-medium">Format Rule</h4>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onRemove}
@@ -116,6 +117,7 @@ export function FormatRuleForm({
                       <span>{value}</span>
                     </div>
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => removeComponent(key)}

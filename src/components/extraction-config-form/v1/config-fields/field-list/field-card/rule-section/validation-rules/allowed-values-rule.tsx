@@ -1,4 +1,4 @@
-import { useFormContext, type UseFormReturn } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import {
   FormField,
   FormItem,
@@ -38,6 +38,7 @@ export function AllowedValuesRule({
           <h4 className="text-sm font-medium">Allowed Values Rule</h4>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onRemove}

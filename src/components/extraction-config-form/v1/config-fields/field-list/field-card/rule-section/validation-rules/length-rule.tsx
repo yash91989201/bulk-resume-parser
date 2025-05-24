@@ -37,6 +37,7 @@ export function LengthRule({
           <h4 className="text-sm font-medium">Length Validation Rule</h4>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onRemove}

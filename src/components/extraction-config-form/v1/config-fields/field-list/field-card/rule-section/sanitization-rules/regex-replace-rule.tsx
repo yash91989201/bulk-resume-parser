@@ -37,6 +37,7 @@ export function RegexReplaceRule({
           <h4 className="text-sm font-medium">Regex Replace Rule</h4>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onRemove}

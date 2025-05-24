@@ -38,6 +38,7 @@ export function CustomRuleForm({
         </div>
         <Button
           variant="ghost"
+          type="button"
           size="sm"
           onClick={onRemove}
           className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8 p-0"

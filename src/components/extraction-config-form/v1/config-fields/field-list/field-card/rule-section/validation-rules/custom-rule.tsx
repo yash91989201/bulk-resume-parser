@@ -37,6 +37,7 @@ export function CustomRule({
           <h4 className="text-sm font-medium">Custom Validation Rule</h4>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onRemove}

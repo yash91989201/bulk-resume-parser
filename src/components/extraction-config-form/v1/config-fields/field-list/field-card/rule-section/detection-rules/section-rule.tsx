@@ -44,6 +44,7 @@ export function SectionRule({
           <h4 className="text-sm font-medium">Section Rule</h4>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onRemove}

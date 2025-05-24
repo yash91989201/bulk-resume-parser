@@ -3,11 +3,11 @@ import { Button } from "@/ui/button";
 import { Copy, Check } from "lucide-react";
 import type { ExtractionConfigV0FormType } from "@/lib/extraction-config/types";
 
-interface ConfigPreviewV0Props {
+export const ConfigPreview = ({
+  formValues,
+}: {
   formValues: ExtractionConfigV0FormType;
-}
-
-export const ConfigPreview = ({ formValues }: ConfigPreviewV0Props) => {
+}) => {
   const [copied, setCopied] = useState(false);
 
   const jsonString = JSON.stringify(formValues, null, 2);
@@ -22,10 +22,11 @@ export const ConfigPreview = ({ formValues }: ConfigPreviewV0Props) => {
     <div className="bg-muted relative rounded-lg border">
       <div className="absolute top-4 right-4">
         <Button
-          variant="ghost"
+          type="button"
+          variant="outline"
           size="icon"
           onClick={copyToClipboard}
-          className="bg-background/80 h-8 w-8 rounded-full backdrop-blur-sm"
+          className="bg-background/80 h-8 w-8 backdrop-blur-sm"
         >
           {copied ? (
             <Check className="h-4 w-4" />

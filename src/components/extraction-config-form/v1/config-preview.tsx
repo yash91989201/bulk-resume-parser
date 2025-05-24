@@ -20,6 +20,7 @@ export function ConfigPreview() {
     <div className="bg-muted relative rounded-lg border">
       <div className="absolute top-4 right-4">
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           onClick={copyToClipboard}

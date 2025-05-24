@@ -82,7 +82,12 @@ export function ValidationRules({ fieldIndex }: ValidationRulesProps) {
         <h3 className="text-sm font-medium">Validation Rules</h3>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2"
+            >
               <Plus className="h-4 w-4" />
               <span>Add Rule</span>
               <Separator orientation="vertical" className="mx-1 h-4" />

@@ -1,26 +1,29 @@
 import { Button } from "@/ui/button";
-import { Save, RotateCcw, Download } from "lucide-react";
+import { Save, RotateCcw } from "lucide-react";
 
-interface ConfigActionsV0Props {
+export const ConfigActions = ({
+  onSave,
+  onReset,
+}: {
   onSave: () => void;
   onReset: () => void;
-}
-
-export function ConfigActions({ onSave, onReset }: ConfigActionsV0Props) {
+}) => {
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={onReset} className="gap-1.5">
-        <RotateCcw className="h-3.5 w-3.5" />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onReset}
+        className="gap-1.5"
+      >
+        <RotateCcw className="size-4" />
         <span>Reset</span>
       </Button>
-      <Button variant="outline" size="sm" className="gap-1.5">
-        <Download className="h-3.5 w-3.5" />
-        <span>Export</span>
-      </Button>
       <Button size="sm" onClick={onSave} className="gap-1.5">
-        <Save className="h-3.5 w-3.5" />
-        <span>Deploy</span>
+        <Save className="size-4" />
+        <span>Save</span>
       </Button>
     </div>
   );
-}
+};
