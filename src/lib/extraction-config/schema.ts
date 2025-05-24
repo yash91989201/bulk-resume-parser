@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 export const BaseFieldConfigSchema = z.object({
-  key: z.string(), // keep key validation as-is (or add your own)
+  key: z.string(),
 
   label: z
     .string()

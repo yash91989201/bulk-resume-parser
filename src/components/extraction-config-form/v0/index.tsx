@@ -30,27 +30,20 @@ export const ExtractionConfigV0Form = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <ConfigHeader />
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} onReset={() => form.reset()}>
+        <div className="space-y-6">
+          <ConfigHeader />
+          <Tabs defaultValue="editor" className="w-full">
+            <div className="mb-6 flex items-center justify-between">
+              <TabsList className="grid w-[400px] grid-cols-2">
+                <TabsTrigger value="editor">Editor</TabsTrigger>
+                <TabsTrigger value="preview">JSON Preview</TabsTrigger>
+              </TabsList>
 
-      <Tabs defaultValue="editor" className="w-full">
-        <div className="flex items-center justify-between">
-          <TabsList className="grid w-[400px] grid-cols-2">
-            <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="preview">JSON Preview</TabsTrigger>
-          </TabsList>
+              <ConfigActions />
+            </div>
 
-          <ConfigActions
-            onSave={() => form.handleSubmit(onSubmit)()}
-            onReset={() => form.reset()}
-          />
-        </div>
-
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 py-6"
-          >
             <TabsContent value="editor" className="mt-0">
               <ConfigFields />
             </TabsContent>
@@ -58,9 +51,9 @@ export const ExtractionConfigV0Form = () => {
             <TabsContent value="preview" className="mt-0">
               <ConfigPreview formValues={form.watch()} />
             </TabsContent>
-          </form>
-        </Form>
-      </Tabs>
-    </div>
+          </Tabs>
+        </div>
+      </form>
+    </Form>
   );
 };

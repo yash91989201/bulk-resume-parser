@@ -28,30 +28,29 @@ export const ExtractionConfigV1Form = () => {
     },
   });
 
+  const { handleSubmit, reset } = form;
+
   const onSubmit: SubmitHandler<ExtractionConfigV1FormType> = (data) => {
     toast.success("config submitted");
     console.log("Form data submitted:", data);
   };
 
   return (
-    <div className="space-y-6">
-      <ConfigHeader />
+    <Form {...form}>
+      <form onSubmit={handleSubmit(onSubmit)} onReset={() => reset()}>
+        <div className="space-y-6">
+          <ConfigHeader />
 
-      <Form {...form}>
-        <Tabs defaultValue="editor" className="w-full">
-          <div className="flex items-center justify-between">
-            <TabsList className="grid w-[400px] grid-cols-2">
-              <TabsTrigger value="editor">Editor</TabsTrigger>
-              <TabsTrigger value="preview">JSON Preview</TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="editor" className="w-full">
+            <div className="mb-6 flex items-center justify-between">
+              <TabsList className="grid w-[400px] grid-cols-2">
+                <TabsTrigger value="editor">Editor</TabsTrigger>
+                <TabsTrigger value="preview">JSON Preview</TabsTrigger>
+              </TabsList>
 
-            <ConfigActions />
-          </div>
+              <ConfigActions />
+            </div>
 
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 py-6"
-          >
             <TabsContent value="editor" className="mt-0">
               <ConfigFields />
             </TabsContent>
@@ -59,9 +58,9 @@ export const ExtractionConfigV1Form = () => {
             <TabsContent value="preview" className="mt-0">
               <ConfigPreview />
             </TabsContent>
-          </form>
-        </Tabs>
-      </Form>
-    </div>
+          </Tabs>
+        </div>
+      </form>
+    </Form>
   );
 };
