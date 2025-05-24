@@ -1,5 +1,3 @@
-"use client";
-
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { FieldCard } from "./field-card";
 import { EmptyState } from "./empty-state";

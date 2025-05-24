@@ -1,10 +1,4 @@
-"use client";
-
-import {
-  type UseFormReturn,
-  useFieldArray,
-  useFormContext,
-} from "react-hook-form";
+import { useFieldArray, useFormContext } from "react-hook-form";
 import { Button } from "@/ui/button";
 import {
   Plus,

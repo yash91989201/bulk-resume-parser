@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/ui/button";
 import type { ExtractionConfigV1FormType } from "@/lib/extraction-config/types";
 import { Save, RotateCcw, Download } from "lucide-react";

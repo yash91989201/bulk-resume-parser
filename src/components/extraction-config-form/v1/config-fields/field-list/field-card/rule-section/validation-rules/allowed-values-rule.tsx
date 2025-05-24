@@ -1,5 +1,3 @@
-"use client";
-
 import { useFormContext, type UseFormReturn } from "react-hook-form";
 import {
   FormField,

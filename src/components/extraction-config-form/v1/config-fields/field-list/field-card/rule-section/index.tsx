@@ -1,5 +1,3 @@
-"use client";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import { DetectionRules } from "./detection-rules";
 import { OutputSchema } from "./output-schema";
