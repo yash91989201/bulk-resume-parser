@@ -1,5 +1,5 @@
 import { createEnv } from "@t3-oss/env-nextjs";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const env = createEnv({
   /**
@@ -7,11 +7,11 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: z.url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    BETTER_AUTH_URL: z.string(),
+    BETTER_AUTH_URL: z.url(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_TRUSTED_ORIGINS: z.string(),
     S3_ENDPOINT: z
@@ -40,7 +40,7 @@ export const env = createEnv({
       })
       .transform((val) => val.toLowerCase() === "true")
       .optional(),
-    RABBITMQ_URL: z.string(),
+    RABBITMQ_URL: z.url(),
   },
 
   /**
@@ -49,7 +49,7 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    NEXT_PUBLIC_BETTER_AUTH_URL: z.string(),
+    NEXT_PUBLIC_BETTER_AUTH_URL: z.url(),
   },
 
   /**

@@ -3,7 +3,7 @@ import React from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 // UTILS
 import { uploadTaskFiles, formatFileSize } from "@/lib/utils";
 import { useTRPC } from "@/trpc/react";
@@ -54,7 +54,7 @@ export const ParsingTaskForm = () => {
   );
 
   const parsingTaskForm = useForm<ParsingTaskFormType>({
-    resolver: zodResolver(ParsingTaskFormSchema),
+    resolver: standardSchemaResolver(ParsingTaskFormSchema),
     defaultValues: {
       taskName: "",
       taskFilesState: [],

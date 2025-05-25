@@ -1,14 +1,14 @@
-import * as z from "zod";
+import * as z from "zod/v4";
 
 export const BaseFieldConfigSchema = z.object({
   key: z.string(),
 
   label: z
     .string()
-    .min(4, { message: "Min. length 6 letters" })
-    .max(12, { message: "Max. length 12 letters" })
+    .min(4, { error: "Min. length 6 letters" })
+    .max(12, { error: "Max. length 12 letters" })
     .regex(/^[a-zA-Z0-9 _-]+$/, {
-      message:
+      error:
         "Label may include letters, numbers, spaces, underscores, or hyphens—no other special characters.",
     })
     .transform((lbl) => lbl.trim()),
@@ -23,15 +23,15 @@ export const ExtractionConfigV0Schema = z.object({
       BaseFieldConfigSchema.extend({
         prompt: z
           .string()
-          .min(12, { message: "Min. length 12 letters" })
-          .max(60, { message: "Max. length 60 letters" }),
+          .min(12, { error: "Min. length 12 letters" })
+          .max(60, { error: "Max. length 60 letters" }),
         example: z
           .string()
-          .min(12, { message: "Min. length 12 letters" })
-          .max(60, { message: "Max. length 60 letters" }),
+          .min(12, { error: "Min. length 12 letters" })
+          .max(60, { error: "Max. length 60 letters" }),
       }),
     )
-    .min(1, { message: "Config should have at least 1 field spec" }),
+    .min(1, { error: "Config should have at least 1 field spec" }),
 });
 
 export const ExtractionConfigV0FormSchema = z.object({

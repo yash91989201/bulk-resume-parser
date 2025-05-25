@@ -4,7 +4,7 @@ import { ExtractionConfigV0FormSchema } from "@/lib/extraction-config/schema";
 import type { ExtractionConfigV0FormType } from "@/lib/extraction-config/types";
 import { Form } from "@/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import { ConfigActions } from "./config-actions";
@@ -20,7 +20,7 @@ export const ExtractionConfigV0Form = () => {
   const api = useTRPC();
 
   const form = useForm<ExtractionConfigV0FormType>({
-    resolver: zodResolver(ExtractionConfigV0FormSchema),
+    resolver: standardSchemaResolver(ExtractionConfigV0FormSchema),
     defaultValues: {
       name: "",
       config: {

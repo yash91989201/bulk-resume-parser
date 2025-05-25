@@ -1,22 +1,22 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { SubmitHandler } from "react-hook-form";
-import { useForm } from "react-hook-form";
 import { ExtractionConfigV1FormSchema } from "@/lib/extraction-config/schema";
 import { Form } from "@/ui/form";
-import { ConfigHeader } from "./config-header";
-import { ConfigFields } from "./config-fields";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import type { SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
+import { ConfigFields } from "./config-fields";
+import { ConfigHeader } from "./config-header";
 // import { ConfigPreview } from "@/components/config-preview";
-import { ConfigPreview } from "./config-preview";
-import { ConfigActions } from "./config-actions";
 import type { ExtractionConfigV1FormType } from "@/lib/extraction-config/types";
 import { toast } from "sonner";
+import { ConfigActions } from "./config-actions";
+import { ConfigPreview } from "./config-preview";
 
 export const ExtractionConfigV1Form = () => {
   const form = useForm<ExtractionConfigV1FormType>({
-    resolver: zodResolver(ExtractionConfigV1FormSchema),
+    resolver: standardSchemaResolver(ExtractionConfigV1FormSchema),
     defaultValues: {
       name: "",
       config: {

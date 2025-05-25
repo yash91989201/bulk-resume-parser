@@ -1,4 +1,4 @@
-import * as z from "zod";
+import * as z from "zod/v4";
 import {
   createInsertSchema,
   createSelectSchema,
@@ -41,7 +41,7 @@ export const S3BucketSchema = z.enum([
 
 export const BaseProcedureOutputSchema = z.object({
   status: z.enum(["SUCCESS", "FAILED"]),
-  message: z.string(),
+  error: z.string(),
 });
 
 // FORM SCHEMAS
@@ -51,7 +51,7 @@ export const StartParsingInput = z.object({
 });
 
 export const ParsingTaskFormSchema = z.object({
-  taskName: z.string().min(6, { message: "Min. 6 chars" }),
+  taskName: z.string().min(6, { error: "Min. 6 chars" }),
   taskFilesState: z
     .array(
       z.object({
@@ -110,23 +110,23 @@ export const CreateParsingTaskInput = z.object({
 
 // AUTH SCHEMAS
 export const LoginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
+  email: z.email({ error: "Invalid email address" }),
   password: z
     .string()
-    .min(6, { message: "Password must be at least 6 characters" }),
+    .min(6, { error: "Password must be at least 6 characters" }),
 });
 
 export const SignupSchema = z
   .object({
     name: z.string(),
-    email: z.string().email({ message: "Invalid email address" }),
+    email: z.email({ error: "Invalid email address" }),
     password: z
       .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
+      .min(6, { error: "Password must be at least 6 characters" }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
+    error: "Passwords don't match",
     path: ["confirmPassword"],
   });
 
