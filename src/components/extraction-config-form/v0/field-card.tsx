@@ -22,8 +22,9 @@ export const FieldCard = ({
   index: number;
   onRemove: () => void;
 }) => {
-  const { control, watch } = useFormContext<ExtractionConfigV0FormType>();
   const [expanded, setExpanded] = useState(true);
+  const { control, watch, formState } =
+    useFormContext<ExtractionConfigV0FormType>();
 
   return (
     <div className="bg-card overflow-hidden rounded-lg border shadow-sm transition-all">
@@ -54,6 +55,7 @@ export const FieldCard = ({
             type="button"
             variant="ghost"
             size="icon"
+            disabled={formState.isSubmitting}
             onClick={onRemove}
             className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8"
           >

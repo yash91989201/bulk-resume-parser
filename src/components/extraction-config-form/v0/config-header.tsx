@@ -8,7 +8,7 @@ export const ConfigHeader = () => {
           <FileText className="h-5 w-5" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight">
-          V0 Extraction Configuration
+          Extraction Config Builder (V0)
         </h1>
       </div>
       <p className="text-muted-foreground max-w-3xl">

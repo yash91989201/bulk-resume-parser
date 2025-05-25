@@ -6,12 +6,19 @@ import { Form } from "@/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import type { SubmitHandler } from "react-hook-form";
 import { ConfigActions } from "./config-actions";
 import { ConfigFields } from "./config-fields";
 import { ConfigHeader } from "./config-header";
 import { ConfigPreview } from "./config-preview";
+import { useTRPC } from "@/trpc/react";
+import { useMutation } from "@tanstack/react-query";
+import { fieldConfigLabelToKey } from "@/lib/extraction-config";
+import { toast } from "sonner";
 
 export const ExtractionConfigV0Form = () => {
+  const api = useTRPC();
+
   const form = useForm<ExtractionConfigV0FormType>({
     resolver: zodResolver(ExtractionConfigV0FormSchema),
     defaultValues: {
@@ -25,13 +32,36 @@ export const ExtractionConfigV0Form = () => {
     },
   });
 
-  const onSubmit = (data: ExtractionConfigV0FormType) => {
-    console.log(data);
+  const { reset, handleSubmit, watch } = form;
+  const { mutateAsync: createExtractionConfig } = useMutation(
+    api.extractionConfig.create.mutationOptions(),
+  );
+
+  const onSubmit: SubmitHandler<ExtractionConfigV0FormType> = async (data) => {
+    const fields = data.config.fields.map((field) => ({
+      ...field,
+      key: fieldConfigLabelToKey(field.label),
+    }));
+
+    const mutationRes = await createExtractionConfig({
+      name: data.name,
+      config: {
+        ...data.config,
+        fields,
+      },
+    });
+
+    if (mutationRes.status === "SUCCESS") {
+      toast.success(mutationRes.message);
+      reset();
+    } else {
+      toast.error(mutationRes.message);
+    }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} onReset={() => form.reset()}>
+      <form onSubmit={handleSubmit(onSubmit)} onReset={() => reset()}>
         <div className="space-y-6">
           <ConfigHeader />
           <Tabs defaultValue="editor" className="w-full">
@@ -49,7 +79,7 @@ export const ExtractionConfigV0Form = () => {
             </TabsContent>
 
             <TabsContent value="preview" className="mt-0">
-              <ConfigPreview formValues={form.watch()} />
+              <ConfigPreview formValues={watch()} />
             </TabsContent>
           </Tabs>
         </div>

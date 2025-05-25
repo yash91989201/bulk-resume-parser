@@ -6,7 +6,7 @@ import { EmptyState } from "./empty-state";
 import type { ExtractionConfigV0FormType } from "@/lib/extraction-config/types";
 
 export const FieldList = () => {
-  const { control } = useFormContext<ExtractionConfigV0FormType>();
+  const { control, formState } = useFormContext<ExtractionConfigV0FormType>();
   const { fields, append, remove } = useFieldArray({
     name: "config.fields",
     control,
@@ -27,7 +27,12 @@ export const FieldList = () => {
         <h2 className="text-xl font-semibold tracking-tight">
           Fields Configuration
         </h2>
-        <Button type="button" onClick={addField} className="gap-2">
+        <Button
+          type="button"
+          onClick={addField}
+          className="gap-2"
+          disabled={formState.isSubmitting}
+        >
           <Plus className="h-4 w-4" /> Add Field
         </Button>
       </div>

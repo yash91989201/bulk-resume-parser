@@ -5,7 +5,7 @@ export const BaseFieldConfigSchema = z.object({
 
   label: z
     .string()
-    .min(6, { message: "Min. length 6 letters" })
+    .min(4, { message: "Min. length 6 letters" })
     .max(12, { message: "Max. length 12 letters" })
     .regex(/^[a-zA-Z0-9 _-]+$/, {
       message:

@@ -8,13 +8,19 @@ export function ConfigActions() {
 
   return (
     <div className="flex items-center gap-2">
-      <Button type="reset" size="sm" variant="outline" className="gap-1.5">
+      <Button
+        type="reset"
+        disabled={formState.isSubmitting}
+        size="sm"
+        variant="outline"
+        className="gap-1.5"
+      >
         <RotateCcw className="h-3.5 w-3.5" />
         Reset
       </Button>
-      <Button size="sm" className="gap-1.5">
+      <Button size="sm" className="gap-1.5" disabled={formState.isSubmitting}>
         {formState.isSubmitting ? (
-          <Loader2 className="size-4" />
+          <Loader2 className="size-4 animate-spin" />
         ) : (
           <Save className="size-4" />
         )}
