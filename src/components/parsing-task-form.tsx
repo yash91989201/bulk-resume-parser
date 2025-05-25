@@ -1,8 +1,9 @@
 "use client";
+
 import React from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 // UTILS
 import { uploadTaskFiles, formatFileSize } from "@/lib/utils";
@@ -25,6 +26,13 @@ import {
   FormField,
   Form,
 } from "@/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/select";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 // CUSTOM COMPONENTS
@@ -34,9 +42,14 @@ import type { SubmitHandler } from "react-hook-form";
 import type { ParsingTaskFormType } from "@/lib/types";
 // CONSTANTS
 import { ACCEPTED_ARCHIVE_TYPES, MAX_FILE_SIZE_S3_ENDPOINT } from "@/constants";
+import { Skeleton } from "@/ui/skeleton";
 
 export const ParsingTaskForm = () => {
   const api = useTRPC();
+
+  const { data: extractionConfigList, isLoading: extractionConfigListLoading } =
+    useQuery(api.extractionConfig.getAll.queryOptions());
+
   const { mutateAsync: createParsingTask } = useMutation(
     api.parsingTask.create.mutationOptions(),
   );
@@ -57,6 +70,7 @@ export const ParsingTaskForm = () => {
     resolver: standardSchemaResolver(ParsingTaskFormSchema),
     defaultValues: {
       taskName: "",
+      extractionConfigId: "",
       taskFilesState: [],
     },
   });
@@ -68,7 +82,7 @@ export const ParsingTaskForm = () => {
 
   const onSubmit: SubmitHandler<ParsingTaskFormType> = async (formData) => {
     try {
-      const { taskName, taskFilesState } = formData;
+      const { taskName, taskFilesState, extractionConfigId } = formData;
 
       const filesMetadata = taskFilesState.map(({ file }) => ({
         originalName: file.name,
@@ -83,6 +97,7 @@ export const ParsingTaskForm = () => {
       const createParsingTaskRes = await createParsingTask({
         taskName,
         totalFiles: allArchiveFiles ? undefined : taskFilesState.length,
+        extractionConfigId,
       });
 
       if (createParsingTaskRes.status === "FAILED") {
@@ -164,6 +179,38 @@ export const ParsingTaskForm = () => {
                     />
                   </FormControl>
                   <FormMessage className="text-sm text-red-600" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={control}
+              name="extractionConfigId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Extration Config</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an extraction config" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {extractionConfigListLoading
+                        ? [...Array<number>(2)].map((_, index) => (
+                            <Skeleton key={index} className="mb-1.5 h-8" />
+                          ))
+                        : extractionConfigList?.map((config) => (
+                            <SelectItem key={config.id} value={config.id}>
+                              {config.name}
+                            </SelectItem>
+                          ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />

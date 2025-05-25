@@ -56,17 +56,23 @@ export const parsingTaskTable = mysqlTable("parsing_task", {
   userId: varchar("user_id", { length: 36 })
     .notNull()
     .references(() => userTable.id),
+  extractionConfigId: varchar("extraction_config_id", { length: 36 })
+    .notNull()
+    .references(() => extractionConfigTable.id),
 });
 
 export const parsingTaskTableRelations = relations(
   parsingTaskTable,
-
   ({ one, many }) => ({
     user: one(userTable, {
       fields: [parsingTaskTable.userId],
       references: [userTable.id],
     }),
-    parceableFiles: many(parseableFileTable, {
+    extractionConfig: one(extractionConfigTable, {
+      fields: [parsingTaskTable.extractionConfigId],
+      references: [extractionConfigTable.id],
+    }),
+    parseableFiles: many(parseableFileTable, {
       relationName: "parseableFiles",
     }),
   }),
@@ -122,6 +128,10 @@ export const extractionConfigTableRelations = relations(
     user: one(userTable, {
       fields: [extractionConfigTable.userId],
       references: [userTable.id],
+    }),
+    parsingTask: one(parsingTaskTable, {
+      fields: [extractionConfigTable.id],
+      references: [parsingTaskTable.extractionConfigId],
     }),
   }),
 );

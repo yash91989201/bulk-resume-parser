@@ -1,0 +1,2 @@
+ALTER TABLE `parsing_task` ADD `extraction_config_id` varchar(36) NOT NULL;--> statement-breakpoint
+ALTER TABLE `parsing_task` ADD CONSTRAINT `parsing_task_extraction_config_id_extraction_config_id_fk` FOREIGN KEY (`extraction_config_id`) REFERENCES `extraction_config`(`id`) ON DELETE no action ON UPDATE no action;

@@ -27,6 +27,7 @@ export const parsingTaskRouter = createTRPCRouter({
               userId: ctx.session.user.id,
               taskName: input.taskName,
               totalFiles: input.totalFiles,
+              extractionConfigId: input.extractionConfigId,
             })
             .$returningId();
 

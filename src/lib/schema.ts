@@ -24,11 +24,11 @@ export const ParsingTaskUpdateSchema = createUpdateSchema(parsingTaskTable);
 export const ParseableFileUpdateSchema = createUpdateSchema(parseableFileTable);
 
 export const DeleteParsingTaskInput = z.object({
-  taskId: z.string(),
+  taskId: z.cuid2(),
 });
 
 export const DeleteExtractionConfigInput = z.object({
-  configId: z.string(),
+  configId: z.cuid2(),
 });
 
 export const S3BucketSchema = z.enum([
@@ -52,6 +52,7 @@ export const StartParsingInput = z.object({
 
 export const ParsingTaskFormSchema = z.object({
   taskName: z.string().min(6, { error: "Min. 6 chars" }),
+  extractionConfigId: z.cuid2(),
   taskFilesState: z
     .array(
       z.object({
@@ -94,7 +95,7 @@ export const BucketFileInfoSchema = FileMetadataSchema.extend({
 });
 
 export const GetTaskFileUploadUrlInput = z.object({
-  taskId: z.string(),
+  taskId: z.cuid2(),
   bucketName: S3BucketSchema,
   filesMetadata: z.array(FileMetadataSchema),
 });
@@ -106,6 +107,7 @@ export const GetTaskFileUploadUrlOutput = z.object({
 export const CreateParsingTaskInput = z.object({
   taskName: z.string(),
   totalFiles: z.number().optional(),
+  extractionConfigId: z.string(),
 });
 
 // AUTH SCHEMAS
@@ -131,5 +133,5 @@ export const SignupSchema = z
   });
 
 export const GetResultFileUrlInput = z.object({
-  taskId: z.string(),
+  taskId: z.cuid2(),
 });
