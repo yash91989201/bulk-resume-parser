@@ -129,10 +129,6 @@ export const extractionConfigTableRelations = relations(
       fields: [extractionConfigTable.userId],
       references: [userTable.id],
     }),
-    parsingTask: one(parsingTaskTable, {
-      fields: [extractionConfigTable.id],
-      references: [parsingTaskTable.extractionConfigId],
-    }),
   }),
 );
 

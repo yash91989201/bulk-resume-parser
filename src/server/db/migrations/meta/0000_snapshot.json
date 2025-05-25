@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "f21a902b-5b7d-42e2-8bf0-1e164efe7d21",
+  "id": "d2676250-4d77-421a-a2f4-43ea5847de08",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -421,6 +421,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "extraction_config_id": {
+          "name": "extraction_config_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -431,6 +438,19 @@
           "tableTo": "user",
           "columnsFrom": [
             "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "parsing_task_extraction_config_id_extraction_config_id_fk": {
+          "name": "parsing_task_extraction_config_id_extraction_config_id_fk",
+          "tableFrom": "parsing_task",
+          "tableTo": "extraction_config",
+          "columnsFrom": [
+            "extraction_config_id"
           ],
           "columnsTo": [
             "id"

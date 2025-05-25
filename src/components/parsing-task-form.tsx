@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/select";
-import { Button } from "@/ui/button";
+import { Button, buttonVariants } from "@/ui/button";
 import { Input } from "@/ui/input";
 // CUSTOM COMPONENTS
 import { MultiFileDropzone } from "@/components/multi-file-dropzone";
@@ -43,6 +43,7 @@ import type { ParsingTaskFormType } from "@/lib/types";
 // CONSTANTS
 import { ACCEPTED_ARCHIVE_TYPES, MAX_FILE_SIZE_S3_ENDPOINT } from "@/constants";
 import { Skeleton } from "@/ui/skeleton";
+import Link from "next/link";
 
 export const ParsingTaskForm = () => {
   const api = useTRPC();
@@ -199,15 +200,24 @@ export const ParsingTaskForm = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {extractionConfigListLoading
-                        ? [...Array<number>(2)].map((_, index) => (
-                            <Skeleton key={index} className="mb-1.5 h-8" />
-                          ))
-                        : extractionConfigList?.map((config) => (
-                            <SelectItem key={config.id} value={config.id}>
-                              {config.name}
-                            </SelectItem>
-                          ))}
+                      {extractionConfigListLoading ? (
+                        [...Array<number>(2)].map((_, index) => (
+                          <Skeleton key={index} className="mb-1.5 h-8" />
+                        ))
+                      ) : extractionConfigList?.length === 0 ? (
+                        <Link
+                          href="/dashboard/extraction-config/new"
+                          className={buttonVariants({ variant: "link" })}
+                        >
+                          Create new config
+                        </Link>
+                      ) : (
+                        extractionConfigList?.map((config) => (
+                          <SelectItem key={config.id} value={config.id}>
+                            {config.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

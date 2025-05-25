@@ -55,6 +55,7 @@ CREATE TABLE `parsing_task` (
 	`created_at` timestamp NOT NULL DEFAULT (now()),
 	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	`user_id` varchar(36) NOT NULL,
+	`extraction_config_id` varchar(36) NOT NULL,
 	CONSTRAINT `parsing_task_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -97,4 +98,5 @@ ALTER TABLE `account` ADD CONSTRAINT `account_user_id_user_id_fk` FOREIGN KEY (`
 ALTER TABLE `extraction_config` ADD CONSTRAINT `extraction_config_user_id_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `parseable_file` ADD CONSTRAINT `parseable_file_parsing_task_id_parsing_task_id_fk` FOREIGN KEY (`parsing_task_id`) REFERENCES `parsing_task`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `parsing_task` ADD CONSTRAINT `parsing_task_user_id_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `parsing_task` ADD CONSTRAINT `parsing_task_extraction_config_id_extraction_config_id_fk` FOREIGN KEY (`extraction_config_id`) REFERENCES `extraction_config`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `session` ADD CONSTRAINT `session_user_id_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE no action ON UPDATE no action;
