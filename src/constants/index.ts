@@ -146,7 +146,7 @@ export const QUEUES = {
   CONVERSION_DIRECTOR: "conversion_director_queue",
 } as const;
 
-export const MAX_FILE_SIZE_S3_ENDPOINT = 1000;
+export const MAX_FILE_SIZE_S3_ENDPOINT = 1024;
 
 export const ACCEPTED_FILE_TYPES = [
   "image/png",

@@ -8,7 +8,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <TopNav />
       <main className="flex gap-6">
         <SideNav />
-        <div className="flex-1">{children}</div>
+        <div className="mb-6 flex-1">{children}</div>
       </main>
     </div>
   );
