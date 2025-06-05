@@ -163,6 +163,7 @@ export const ACCEPTED_ARCHIVE_TYPES = [
   "application/vnd.rar",
   "application/x-rar",
   "application/x-zip-compressed",
+  "application/x-compressed",
   "application/x-7z-compressed",
   "application/x-rar-compressed",
 ];

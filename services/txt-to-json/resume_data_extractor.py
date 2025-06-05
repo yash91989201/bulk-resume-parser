@@ -130,6 +130,47 @@ class ResumeDataExtractor:
             "functional_area": None,
         }
 
+    async def extract_data_from_dynamic_prompt(self, prompt: str, resume: str) -> Dict:
+        """
+        Extract data from a dynamic prompt and resume text.
+        This method is used for testing purposes.
+        """
+        if len(resume) == 0:
+            return self.empty_response()
+
+        prompt = f"{prompt}\n\nResume Text:\n{resume}"
+
+        for attempt in range(self.max_retries):
+            api_key = self.gemini_api_key
+            if not api_key:
+                await asyncio.sleep(2**attempt)
+                continue
+
+            try:
+                configure(api_key=api_key)
+                gemini = GenerativeModel(SERVICE_CONFIG.GEMINI_MODEL)
+                response = await asyncio.to_thread(
+                    gemini.generate_content,
+                    prompt,
+                    generation_config=GenerationConfig(
+                        temperature=0, response_mime_type="application/json"
+                    ),
+                )
+
+                if not response.text:
+                    return self.empty_response()
+
+                return self.validate_response(response.text)
+
+            except Exception as e:
+                if "429" in str(e):
+                    logger.error("API KEY rate limited")
+                logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
+                if attempt == self.max_retries - 1:
+                    raise
+
+        raise Exception("Max retries exceeded")
+
 
 resume_data_extractor = ResumeDataExtractor(
     gemini_api_key=SERVICE_CONFIG.GEMINI_API_KEY, max_retries=SERVICE_CONFIG.MAX_RETRIES

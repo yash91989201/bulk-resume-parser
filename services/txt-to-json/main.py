@@ -5,9 +5,9 @@ import signal
 import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
 from config import SERVICE_CONFIG, MINIO_BUCKETS, QUEUES
-import resume_data_extractor
 from resume_data_extractor import resume_data_extractor
 from utils import (
+    get_task_prompt,
     logger,
     cleanup_files,
     download_file,
@@ -55,7 +55,12 @@ async def process_message(message: AbstractIncomingMessage):
         with open(local_path, "r") as f:
             content = f.read()
 
-        extracted_data = await resume_data_extractor.extract_data(content)
+        dynamicPrompt = await get_task_prompt(task_id)
+
+        extracted_data = await resume_data_extractor.extract_data_from_dynamic_prompt(
+            dynamicPrompt, content
+        )
+
         logger.info(f"extract_data {extracted_data}")
 
         # Construct upload path for JSON file

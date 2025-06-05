@@ -62,7 +62,6 @@ export default function LandingPage() {
           </Suspense>
         </div>
       </header>
-
       {/* Hero Section */}
       <section className="px-4 py-12 md:px-6 md:py-24 lg:py-32">
         <div className="container mx-auto flex flex-col items-center gap-8 lg:flex-row lg:gap-12">
@@ -98,7 +97,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section id="features" className="bg-white px-4 py-12 md:px-6">
         <div className="container mx-auto">
@@ -129,7 +127,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
       {/* Demo Section */}
       <section id="demo" className="px-4 py-12 md:px-6">
         <div className="container mx-auto grid items-center gap-8 lg:grid-cols-2">
@@ -188,7 +185,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
       {/* Pricing Section */}
       <section id="pricing" className="bg-white px-4 py-12 md:px-6">
         <div className="container mx-auto">
@@ -233,7 +229,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
       {/* Benefits Section */}
       <section className="bg-linear-to-b from-white to-gray-50 px-4 py-12 md:px-6">
         <div className="container mx-auto max-w-6xl">
@@ -332,7 +327,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-12 md:px-6">
         <div className="bg-primary rounded-lg p-8 text-white md:p-12">
@@ -350,7 +344,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
       {/* FAQ Section */}
       <section className="bg-white px-4 py-12 md:px-6">
         <div className="container mx-auto max-w-3xl">
@@ -371,7 +364,6 @@ export default function LandingPage() {
           </Accordion>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="bg-background border-t">
         <div className="container mx-auto px-4 py-8 md:px-6">

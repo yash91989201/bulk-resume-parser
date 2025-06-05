@@ -194,6 +194,7 @@ services:
   app:
     build:
       context: .
+      dockerfile: Dockerfile
     image: yash6370/bulk-resume-parser:latest
     container_name: app
     networks:
@@ -202,6 +203,9 @@ services:
       - "3000:3000"
     env_file:
       - .env.docker
+    volumes:
+      - .:/app
+      - /app/node_modules
 
   app-db:
     image: mysql:latest
