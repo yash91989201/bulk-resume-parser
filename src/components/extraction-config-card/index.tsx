@@ -1,6 +1,10 @@
 "use client";
 
-import type { ExtractionConfigType } from "@/lib/extraction-config/types";
+import type {
+  ExtractionConfigType,
+  ExtractionConfigV0Type,
+  ExtractionConfigV1Type,
+} from "@/lib/extraction-config/types";
 import { useTRPC } from "@/trpc/react";
 import {
   Card,
@@ -12,6 +16,19 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/ui/accordion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/ui/dropdown-menu";
+import { MoreHorizontal, Pencil, Trash } from "lucide-react";
 
 export const ExtractionConfigCard = ({
   id,
@@ -40,20 +57,83 @@ export const ExtractionConfigCard = ({
   return (
     <Card className="min-w-lg">
       <CardHeader>
-        <CardTitle>{name}</CardTitle>
-        <CardDescription>
-          {version} - {description}
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>{name}</CardTitle>
+            <CardDescription>
+              {version} - {description}
+            </CardDescription>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Pencil className="mr-2 h-4 w-4" />
+                <span>Edit</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={deleteExtractionConfig}>
+                <Trash className="mr-2 h-4 w-4" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent>
-        <Button onClick={() => deleteExtractionConfig()}>Delete</Button>
-        <p>Fields</p>
-        <ul className="list-inside list-disc">
+        <Accordion type="single" collapsible className="w-full">
           {fields.map((field) => (
-            <li key={field.key}>{field.label}</li>
+            <AccordionItem key={field.key} value={field.key}>
+              <AccordionTrigger>{field.label ?? field.key}</AccordionTrigger>
+              <AccordionContent>
+                {version === "v0" && "prompt" in field && (
+                  <V0FieldConfigDetails field={field} />
+                )}
+                {version === "v1" && "description" in field && (
+                  <V1FieldConfigDetails field={field} />
+                )}
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </ul>
+        </Accordion>
       </CardContent>
     </Card>
+  );
+};
+
+const V0FieldConfigDetails = ({
+  field,
+}: {
+  field: ExtractionConfigV0Type["fields"][number];
+}) => {
+  return (
+    <div className="flex flex-col space-y-2">
+      <p>
+        <span className="font-semibold">Prompt:</span> {field.prompt}
+      </p>
+      <p>
+        <span className="font-semibold">Example:</span> {field.example}
+      </p>
+    </div>
+  );
+};
+
+const V1FieldConfigDetails = ({
+  field,
+}: {
+  field: ExtractionConfigV1Type["fields"][number];
+}) => {
+  return (
+    <div className="flex flex-col space-y-2">
+      <p>
+        <span className="font-semibold">Description:</span> {field.description}
+      </p>
+      <p>
+        <span className="font-semibold">Note:</span> {field.note}
+      </p>
+    </div>
   );
 };
