@@ -14,7 +14,8 @@ from utils import (
     get_rabbit_mq_connection,
     send_message_to_queue,
     update_task_file_count,
-    upload_by_file_type
+    upload_by_file_type,
+    delete_archive_files_from_minio
 )
 
 # Graceful shutdown handling
@@ -41,7 +42,7 @@ async def process_message(message: AbstractIncomingMessage):
         logger.info(f"Task {task_id}: Starting extraction")
 
         # Step 1: Download all archive files in task 
-        archive_files = await download_archive_files(user_id, task_id)
+        archive_files, archive_files_object_name = await download_archive_files(user_id, task_id)
 
         # Step 2: Extract contents of archive files 
         extraction_directory = await extract_archive_files(task_id, archive_files)
@@ -70,6 +71,9 @@ async def process_message(message: AbstractIncomingMessage):
         await cleanup_files(archive_files)
         await cleanup_dir(extraction_directory)
         await cleanup_dir(os.path.join(SERVICE_CONFIG.DOWNLOAD_DIRECTORY,user_id, task_id))
+
+        # Step 8: Delete archive files from minio
+        await delete_archive_files_from_minio(archive_files_object_name)
 
         logger.info(f"Task {task_id}: Extraction and upload completed successfully.")
         await message.ack()

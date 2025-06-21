@@ -197,7 +197,7 @@ async def send_message_to_queue(queue_name:str, message:dict):
             routing_key=queue_name,
         )
 
-async def download_archive_files(user_id: str, task_id: str) -> List[str]:
+async def download_archive_files(user_id: str, task_id: str) -> tuple[List[str], List[str]]:
     """
     Downloads files from MinIO for the given user and task.
 
@@ -206,20 +206,25 @@ async def download_archive_files(user_id: str, task_id: str) -> List[str]:
         task_id: The task ID.
 
     Returns:
-        List of archive file paths downloaded locally.
+        A tuple containing:
+        - List of archive file paths downloaded locally.
+        - List of minio object names that were downloaded
     """
     archive_files_path = []
+    archive_files_object_name = []
     objects = minio_client.list_objects(MINIO_BUCKETS.ARCHIVE_FILES, prefix=f"{user_id}/{task_id}/")
 
     for obj in objects:
         if obj.object_name is None:
             continue
+        
+        archive_files_object_name.append(obj.object_name)
 
         archive_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIRECTORY, user_id, task_id, os.path.basename(obj.object_name))
         minio_client.fget_object(MINIO_BUCKETS.ARCHIVE_FILES, obj.object_name, archive_file_path)
         archive_files_path.append(archive_file_path)
 
-    return archive_files_path
+    return archive_files_path, archive_files_object_name
 
 
 async def extract_archive_files(task_id:str, archive_files: List[str]) -> str:
@@ -390,6 +395,22 @@ async def cleanup_dir(extraction_directory: str):
         print(f"Permission denied: {extraction_directory}")
     except OSError as e:
         print(f"Error removing {extraction_directory}: {e}")
+
+async def delete_archive_files_from_minio(archive_files: List[str]):
+    """
+    Deletes archive files from MinIO.
+
+    Args:
+        archive_files: List of MinIO object names to delete.
+    """
+    for obj_name in archive_files:
+        try:
+            minio_client.remove_object(MINIO_BUCKETS.ARCHIVE_FILES, obj_name)
+            logger.info(f"Deleted archive file from MinIO: {obj_name}")
+        except S3Error as e:
+            logger.error(f"MinIO error occurred while deleting {obj_name}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error occurred while deleting {obj_name}: {e}")
 
 def get_minio_folder(file_extension):
     """
