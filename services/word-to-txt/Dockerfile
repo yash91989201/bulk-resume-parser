@@ -1,46 +1,30 @@
-# Stage 1: Build stage
-FROM python:3.12-slim AS builder
+# Base Python environment
+FROM python:3.13-slim AS base
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-  PYTHONUNBUFFERED=1
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install essential build tools
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  curl \
   build-essential \
-  libffi-dev \
-  libssl-dev \
-  gcc \
   && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
+# Copy uv binaries from the official uv image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
 WORKDIR /app
 
-# Copy the requirements file
-COPY requirements.txt .
+# Leverage Docker cache by first copying lockfiles
+COPY pyproject.toml uv.lock ./
 
-# Install Python dependencies
-RUN pip install --user --no-cache-dir -r requirements.txt
+# Install dependencies into .venv using uv
+RUN uv sync --locked
 
-# Stage 2: Runtime stage
-FROM python:3.12-slim
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-  PYTHONUNBUFFERED=1
-
-# Set the working directory
-WORKDIR /app
-
-# Copy application files and dependencies from the builder stage
-COPY --from=builder /root/.local /root/.local
+# Copy application code
 COPY . .
 
-# Ensure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Ensure download directory exists
+RUN mkdir -p /tmp/aggregate-json
 
-# Create the temporary directory
-RUN mkdir -p /tmp/word-to-txt
-
-# Command to run the service
-ENTRYPOINT ["python", "-u", "main.py"]
+# Entrypoint: run the service inside uv's venv
+CMD ["uv", "run", "python", "-u", "main.py"]

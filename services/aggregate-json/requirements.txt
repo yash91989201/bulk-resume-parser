@@ -1,7 +1,0 @@
-aio-pika==9.5.4
-aiohttp==3.11.11
-minio==7.2.15
-python-dotenv==1.0.1
-aiofiles==24.1.0
-orjson==3.10.15
-redis==5.2.1

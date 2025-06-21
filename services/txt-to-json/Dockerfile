@@ -1,44 +1,30 @@
-# Stage 1: Build environment
-FROM python:3.12-slim AS builder
+# Base Python environment
+FROM python:3.13-slim AS base
 
-# Set work directory
-WORKDIR /app
-
-# Install dependencies for building
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install essential build tools
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  curl \
   build-essential \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt ./
-RUN pip install --user --no-cache-dir -r requirements.txt
+# Copy uv binaries from the official uv image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Copy the application source code
-COPY . .
-
-# Stage 2: Runtime environment
-FROM python:3.12-slim
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Set work directory
+# Set working directory
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  libpq-dev \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Leverage Docker cache by first copying lockfiles
+COPY pyproject.toml uv.lock ./
 
-# Copy installed dependencies from builder
-COPY --from=builder /root/.local /root/.local
+# Install dependencies into .venv using uv
+RUN uv sync --locked
 
-# Update PATH for pip installed binaries
-ENV PATH=/root/.local/bin:$PATH
-
-# Copy application source code
+# Copy application code
 COPY . .
 
-# Set the default command
-CMD ["python", "-u", "main.py"]
+# Ensure download directory exists
+RUN mkdir -p /tmp/aggregate-json
+
+# Entrypoint: run the service inside uv's venv
+CMD ["uv", "run", "python", "-u", "main.py"]

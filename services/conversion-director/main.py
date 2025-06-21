@@ -4,19 +4,20 @@ import asyncio
 import signal
 from aio_pika.abc import AbstractIncomingMessage
 from utils import (
-        get_parseable_files,
-        get_queue_name_by_file_path,
-        logger,
-        get_rabbit_mq_connection, 
-        send_message_to_queue, 
+    get_parseable_files,
+    get_queue_name_by_file_path,
+    logger,
+    get_rabbit_mq_connection,
+    send_message_to_queue,
 )
-from config import SERVICE_CONFIG,  QUEUES
+from config import SERVICE_CONFIG, QUEUES
 
 
 # Graceful shutdown handling
 shutdown_event = asyncio.Event()
 
-async def process_message(message:AbstractIncomingMessage):
+
+async def process_message(message: AbstractIncomingMessage):
     """
     Processes a message from the RabbitMQ queue.
 
@@ -40,12 +41,12 @@ async def process_message(message:AbstractIncomingMessage):
             # Step 2: send message to respective queues for file processing
             for parseable_file in parseable_files:
                 await send_message_to_queue(
-                    queue_name= get_queue_name_by_file_path(parseable_file.filePath),
-                    message = {
+                    queue_name=get_queue_name_by_file_path(parseable_file.filePath),
+                    message={
                         "userId": user_id,
                         "taskId": task_id,
-                        "filePath": parseable_file.filePath
-                    }
+                        "filePath": parseable_file.filePath,
+                    },
                 )
 
                 logging.info("Send message for further processing.")
@@ -58,6 +59,7 @@ async def process_message(message:AbstractIncomingMessage):
         logging.error(f"Error processing message: {e}")
         await message.nack(requeue=False)
 
+
 async def worker(task_queue, worker_id):
     """
     Worker function that processes messages from the task queue.
@@ -65,12 +67,15 @@ async def worker(task_queue, worker_id):
     while not shutdown_event.is_set():
         try:
             message = await task_queue.get()
-            logger.info(f"Worker {worker_id} processing message: {message.body.decode()}")
+            logger.info(
+                f"Worker {worker_id} processing message: {message.body.decode()}"
+            )
             await process_message(message)
             task_queue.task_done()
 
         except Exception as e:
             logger.error(f"Worker {worker_id} encountered an error: {e}")
+
 
 async def start_message_consumer():
     """
@@ -84,14 +89,19 @@ async def start_message_consumer():
                 channel = await connection.channel()
 
                 # Set QoS to allow multiple unacknowledged messages
-                await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY) 
+                await channel.set_qos(prefetch_count=SERVICE_CONFIG.CONCURRENCY)
 
                 # Declare the queue
-                queue = await channel.declare_queue(QUEUES.CONVERSION_DIRECTOR, durable=True)
+                queue = await channel.declare_queue(
+                    QUEUES.CONVERSION_DIRECTOR, durable=True
+                )
 
                 # Task queue and worker pool
-                task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE) 
-                workers = [asyncio.create_task(worker(task_queue, i)) for i in range(SERVICE_CONFIG.WORKER_COUNT)] 
+                task_queue = asyncio.Queue(maxsize=SERVICE_CONFIG.QUEUE_SIZE)
+                workers = [
+                    asyncio.create_task(worker(task_queue, i))
+                    for i in range(SERVICE_CONFIG.WORKER_COUNT)
+                ]
 
                 async def enqueue_message(message):
                     await task_queue.put(message)
@@ -117,6 +127,7 @@ async def start_message_consumer():
             logger.error(f"Consumer error: {e}. Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
 
+
 async def graceful_shutdown(signal):
     """
     Handles graceful shutdown on receiving a signal.
@@ -130,11 +141,13 @@ async def graceful_shutdown(signal):
 
     logger.info("Cancelled pending tasks")
 
+
 async def main():
     """
     Main function to start the application.
     """
     await start_message_consumer()
+
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
@@ -153,4 +166,3 @@ if __name__ == "__main__":
     finally:
         logger.info("Consumer stopped. Exiting...")
         loop.close()
-

@@ -1,0 +1,14 @@
+[project]
+name = "extract-archive"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aio-pika>=9.5.5",
+    "aiohttp>=3.12.13",
+    "cuid2>=2.0.1",
+    "minio>=7.2.15",
+    "patool>=4.0.1",
+    "python-dotenv>=1.1.0",
+]

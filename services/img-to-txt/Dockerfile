@@ -1,28 +1,34 @@
-# Use a lightweight base image
-FROM python:3.11-slim
+# Base Python environment with Tesseract and UV
+FROM python:3.11-slim AS base
 
-# Set working directory inside the container
-WORKDIR /app
-
-# Install system dependencies for OpenCV and Tesseract
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install both build-time and runtime dependencies for OCR
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  build-essential \
   tesseract-ocr \
   libtesseract-dev \
+  libleptonica-dev \
   libsm6 \
   libxext6 \
   libxrender-dev \
   libgl1-mesa-glx \
+  pkg-config \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy only the requirements file to leverage Docker's caching mechanism
-COPY requirements.txt /app/requirements.txt
+# Copy uv binaries from the official uv image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Set working directory
+WORKDIR /app
 
-# Copy the application code
-COPY . /app
+# Leverage Docker cache: copy only dependency files
+COPY pyproject.toml uv.lock ./
 
-# Set the default command to run your application
-ENTRYPOINT ["python", "-u", "main.py"]
+# Install Python dependencies into .venv
+RUN uv sync --locked
 
+# Copy application code
+COPY . .
+
+# Entrypoint: run the OCR service via uv
+CMD ["uv", "run", "python", "-u", "main.py"]

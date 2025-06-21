@@ -1,39 +1,30 @@
-# Stage 1: Base image with build dependencies
-FROM python:3.12-slim AS builder
+# Base Python environment
+FROM python:3.13-slim AS base
 
-# Set environment variables for Python
-ENV PYTHONUNBUFFERED=1 \
-  PYTHONDONTWRITEBYTECODE=1
-
-# Install build tools and minimal dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  gcc \
-  libpq-dev \
+# Install essential build tools
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  curl \
+  build-essential \
   && rm -rf /var/lib/apt/lists/*
 
-# Create and set working directory
+# Copy uv binaries from the official uv image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt ./
-RUN pip install --no-cache-dir --upgrade pip && \
-  pip install --no-cache-dir -r requirements.txt
+# Leverage Docker cache by first copying lockfiles
+COPY pyproject.toml uv.lock ./
 
-# Stage 2: Final runtime image
-FROM python:3.12-slim
+# Install dependencies into .venv using uv
+RUN uv sync --locked
 
-# Set environment variables for Python
-ENV PYTHONUNBUFFERED=1 \
-  PYTHONDONTWRITEBYTECODE=1
+# Copy application code
+COPY . .
 
-# Create and set working directory
-WORKDIR /app
+# Ensure download directory exists
+RUN mkdir -p /tmp/aggregate-json
 
-# Copy dependencies from the builder image
-COPY --from=builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
-
-# Copy the application code
-COPY . /app
-
-# Set the entrypoint for the container
-ENTRYPOINT ["python", "-u", "main.py"]
+# Entrypoint: run the service inside uv's venv
+CMD ["uv", "run", "python", "-u", "main.py"]

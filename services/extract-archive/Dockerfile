@@ -1,63 +1,46 @@
-# Stage 1: Build stage
-FROM python:3.12-slim AS builder
+# Base Python environment with both build and runtime tools
+FROM python:3.13-slim AS base
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-  PYTHONUNBUFFERED=1
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install build-time dependencies for Python packages and runtime tools for archive extraction
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  curl \
   build-essential \
   libssl-dev \
   libffi-dev \
   libxml2-dev \
   libxslt1-dev \
   zlib1g-dev \
-  && rm -rf /var/lib/apt/lists/*
-
-# Set the working directory
-WORKDIR /app
-
-# Copy the requirements file
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-# Stage 2: Runtime stage
-FROM python:3.12-slim
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-  PYTHONUNBUFFERED=1
-
-# Install runtime dependencies and tools for RAR extraction
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  libssl-dev \
-  libffi-dev \
-  libxml2 \
-  libxslt1.1 \
-  zlib1g \
   p7zip-full \
   && rm -rf /var/lib/apt/lists/*
 
-# Add non-free repository and install unrar
-RUN echo "deb http://deb.debian.org/debian bookworm non-free" >> /etc/apt/sources.list && \
-  apt-get update && apt-get install -y unrar && \
-  rm -rf /var/lib/apt/lists/*
+# Add non-free repo and install unrar
+RUN echo "deb http://deb.debian.org/debian bookworm non-free" >> /etc/apt/sources.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+  unrar \
+  libxml2 \
+  libxslt1.1 \
+  zlib1g \
+  && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
+# Copy uv binaries from the official uv image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
 WORKDIR /app
 
-# Copy application files and dependencies from builder stage
-COPY --from=builder /root/.local /root/.local
+# Leverage Docker cache by first copying lockfiles
+COPY pyproject.toml uv.lock ./
+
+# Install Python dependencies into .venv
+RUN uv sync --locked
+
+# Copy application code
 COPY . .
 
-# Ensure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
-
-# Create the extraction directory
+# Create extraction directory for archive service
 RUN mkdir -p /tmp/extracted
 
-# Run the service
-ENTRYPOINT ["/bin/sh","-c", "python3 main.py 2>&1 | tee /var/log/bulk-resume-parser/services/extract-archive.log"]
+# Entrypoint: run the archive extraction service
+CMD ["uv", "run", "python", "-u", "main.py"]

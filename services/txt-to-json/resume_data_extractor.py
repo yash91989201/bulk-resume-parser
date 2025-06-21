@@ -2,7 +2,9 @@ import asyncio
 import json
 from typing import Dict
 from config import SERVICE_CONFIG
-from google.generativeai import GenerativeModel, configure, GenerationConfig
+from google.generativeai.generative_models import GenerativeModel
+from google.generativeai.client import configure
+from google.generativeai.types import GenerationConfig
 from utils import logger
 
 
@@ -130,7 +132,7 @@ class ResumeDataExtractor:
             "functional_area": None,
         }
 
-    async def extract_data_from_dynamic_prompt(self, prompt: str, resume: str) -> Dict:
+    async def extract_using_prompt(self, prompt: str, resume: str) -> Dict:
         """
         Extract data from a dynamic prompt and resume text.
         This method is used for testing purposes.
@@ -141,13 +143,8 @@ class ResumeDataExtractor:
         prompt = f"{prompt}\n\nResume Text:\n{resume}"
 
         for attempt in range(self.max_retries):
-            api_key = self.gemini_api_key
-            if not api_key:
-                await asyncio.sleep(2**attempt)
-                continue
-
             try:
-                configure(api_key=api_key)
+                configure(api_key=self.gemini_api_key)
                 gemini = GenerativeModel(SERVICE_CONFIG.GEMINI_MODEL)
                 response = await asyncio.to_thread(
                     gemini.generate_content,
@@ -160,7 +157,11 @@ class ResumeDataExtractor:
                 if not response.text:
                     return self.empty_response()
 
-                return self.validate_response(response.text)
+                try:
+                    return json.loads(response.text)
+                except json.JSONDecodeError:
+                    logger.error("Invalid JSON response")
+                    raise
 
             except Exception as e:
                 if "429" in str(e):

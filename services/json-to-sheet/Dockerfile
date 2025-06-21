@@ -1,42 +1,30 @@
-# Stage 1: Build stage
-FROM python:3.12-slim AS builder
+# Base Python environment
+FROM python:3.13-slim AS base
 
-# Set the working directory inside the container
+# Install essential build tools
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  curl \
+  build-essential \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy uv binaries from the official uv image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
 WORKDIR /app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential gcc libpq-dev && \
-  rm -rf /var/lib/apt/lists/*
+# Leverage Docker cache by first copying lockfiles
+COPY pyproject.toml uv.lock ./
 
-# Copy requirements file
-COPY requirements.txt .
+# Install dependencies into .venv using uv
+RUN uv sync --locked
 
-# Install Python dependencies
-RUN pip install --upgrade pip && \
-  pip install --no-cache-dir -r requirements.txt
-
-# Stage 2: Production stage
-FROM python:3.12-slim
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Set the working directory inside the container
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  libpq-dev && \
-  rm -rf /var/lib/apt/lists/*
-
-# Copy dependencies from the builder stage
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-
-# Copy the application code
+# Copy application code
 COPY . .
 
-# Command to run the application
-CMD ["python", "-u", "main.py"]
+# Ensure download directory exists
+RUN mkdir -p /tmp/aggregate-json
+
+# Entrypoint: run the service inside uv's venv
+CMD ["uv", "run", "python", "-u", "main.py"]

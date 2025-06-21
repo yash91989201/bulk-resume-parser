@@ -1,4 +1,0 @@
-PyPDF2==3.0.1
-aio-pika==9.5.4
-minio==7.2.15
-python-dotenv==1.0.1

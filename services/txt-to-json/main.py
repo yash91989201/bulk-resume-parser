@@ -57,7 +57,7 @@ async def process_message(message: AbstractIncomingMessage):
 
         dynamicPrompt = await get_task_prompt(task_id)
 
-        extracted_data = await resume_data_extractor.extract_data_from_dynamic_prompt(
+        extracted_data = await resume_data_extractor.extract_using_prompt(
             dynamicPrompt, content
         )
 
