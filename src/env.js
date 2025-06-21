@@ -13,17 +13,14 @@ export const env = createEnv({
       .default("development"),
     BETTER_AUTH_URL: z.url(),
     BETTER_AUTH_SECRET: z.string(),
-    BETTER_AUTH_TRUSTED_ORIGINS: z.string().default("http://localhost:3000"),
-    S3_ENDPOINT: z
+    BETTER_AUTH_TRUSTED_ORIGINS: z
       .string()
-      .min(1, "S3_ENDPOINT cannot be empty")
-      .transform((val) => {
-        try {
-          return new URL(val.includes("://") ? val : `http://${val}`).hostname;
-        } catch {
-          throw new Error("Invalid S3_ENDPOINT format");
-        }
-      }),
+      .default("http://localhost:3000")
+      .transform((val) => val.split(",").map((url) => url.trim())),
+    S3_ENDPOINT: z
+      .url()
+      .default("http://localhost:9000")
+      .transform((val) => new URL(val).hostname),
     S3_PORT: z
       .string()
       .refine((val) => !isNaN(Number(val)), {
