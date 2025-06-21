@@ -175,7 +175,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     image: yash6370/bulk-resume-parser:latest
     container_name: app
     networks:
