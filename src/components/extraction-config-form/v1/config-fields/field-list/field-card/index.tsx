@@ -29,6 +29,9 @@ export function FieldCard({ index, onRemove }: FieldCardProps) {
     <div className="bg-card overflow-hidden rounded-lg border shadow-sm transition-all">
       <div className="bg-muted/30 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full">
+            {index + 1}
+          </div>
           <h3 className="font-medium">
             {watch(`config.fields.${index}.label`) || `Field ${index + 1}`}
           </h3>
@@ -77,22 +80,6 @@ export function FieldCard({ index, onRemove }: FieldCardProps) {
                     <FormControl>
                       <Input placeholder="Enter field label" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                name={`config.fields.${index}.key`}
-                control={control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Field Key</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter field key" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Unique identifier for this field
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

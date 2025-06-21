@@ -19,9 +19,7 @@ export default async function Page() {
       <div className="flex justify-between">
         <h1 className="text-xl font-bold">Extraction Config</h1>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            className={buttonVariants({ variant: "secondary" })}
-          >
+          <DropdownMenuTrigger className={buttonVariants()}>
             <Plus className="size-4" />
             New Config
             <Separator orientation="vertical" />

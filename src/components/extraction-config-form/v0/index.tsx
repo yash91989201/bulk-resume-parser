@@ -16,12 +16,16 @@ import { useMutation } from "@tanstack/react-query";
 import { fieldConfigLabelToKey } from "@/lib/extraction-config";
 import { toast } from "sonner";
 
-export const ExtractionConfigV0Form = () => {
+export const ExtractionConfigV0Form = ({
+  defaultValues,
+}: {
+  defaultValues?: ExtractionConfigV0FormType;
+}) => {
   const api = useTRPC();
 
   const form = useForm<ExtractionConfigV0FormType>({
     resolver: standardSchemaResolver(ExtractionConfigV0FormSchema),
-    defaultValues: {
+    defaultValues: defaultValues ?? {
       name: "",
       config: {
         version: "v0",

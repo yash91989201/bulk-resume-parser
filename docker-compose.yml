@@ -3,6 +3,7 @@ name: "bulk-resume-parser"
 volumes:
   redis-data:
   minio-data:
+  app-db-data:
 
 services:
   rabbitmq:
@@ -40,7 +41,7 @@ services:
       - redis-data:/data
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: minio
     networks:
       - bulk-resume-parser
@@ -194,7 +195,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     image: yash6370/bulk-resume-parser:latest
     container_name: app
     networks:
@@ -216,6 +217,8 @@ services:
       - "${DB_PORT}:${DB_PORT}"
     env_file:
       - .env.docker
+    volumes:
+      - app-db-data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
       MYSQL_DATABASE: ${DB_NAME}

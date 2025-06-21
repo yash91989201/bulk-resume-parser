@@ -2,11 +2,9 @@ import * as z from "zod/v4";
 
 export const BaseFieldConfigSchema = z.object({
   key: z.string(),
-
   label: z
     .string()
     .min(4, { error: "Min. length 6 letters" })
-    .max(12, { error: "Max. length 12 letters" })
     .regex(/^[a-zA-Z0-9 _-]+$/, {
       error:
         "Label may include letters, numbers, spaces, underscores, or hyphens—no other special characters.",
@@ -21,14 +19,8 @@ export const ExtractionConfigV0Schema = z.object({
   fields: z
     .array(
       BaseFieldConfigSchema.extend({
-        prompt: z
-          .string()
-          .min(12, { error: "Min. length 12 letters" })
-          .max(60, { error: "Max. length 60 letters" }),
-        example: z
-          .string()
-          .min(12, { error: "Min. length 12 letters" })
-          .max(60, { error: "Max. length 60 letters" }),
+        prompt: z.string().min(12, { error: "Min. length 12 letters" }),
+        example: z.string().min(12, { error: "Min. length 12 letters" }),
       }),
     )
     .min(1, { error: "Config should have at least 1 field spec" }),
@@ -196,7 +188,19 @@ export const FieldConfigSchema = BaseFieldConfigSchema.extend({
     })
     .optional(),
   output_schema: FieldOutputSchema.optional(),
-});
+}).refine(
+  (data) => {
+    if (data.required) {
+      return data.default_value.length >= 4;
+    }
+    return true;
+  },
+  {
+    message:
+      "Default value must be at least 4 characters long for required fields.",
+    path: ["default_value"],
+  },
+);
 
 export const ExtractionConfigV1Schema = z.object({
   version: z.literal("v1"),

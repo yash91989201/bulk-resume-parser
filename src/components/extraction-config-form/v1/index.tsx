@@ -14,10 +14,14 @@ import { toast } from "sonner";
 import { ConfigActions } from "./config-actions";
 import { ConfigPreview } from "./config-preview";
 
-export const ExtractionConfigV1Form = () => {
+export const ExtractionConfigV1Form = ({
+  defaultValues,
+}: {
+  defaultValues?: ExtractionConfigV1FormType;
+}) => {
   const form = useForm<ExtractionConfigV1FormType>({
     resolver: standardSchemaResolver(ExtractionConfigV1FormSchema),
-    defaultValues: {
+    defaultValues: defaultValues ?? {
       name: "",
       config: {
         version: "v1",

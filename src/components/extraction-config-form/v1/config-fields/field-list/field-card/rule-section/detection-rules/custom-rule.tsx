@@ -54,10 +54,10 @@ export function CustomRule({
           <FormItem>
             <FormLabel>Custom Prompt</FormLabel>
             <FormControl>
-              <Input placeholder="Enter custom extraction prompt" {...field} />
+              <Input placeholder="Enter custom detection prompt" {...field} />
             </FormControl>
             <FormDescription>
-              A custom prompt to guide the AI in extracting this field
+              A custom prompt to guide the AI in detecting this field
             </FormDescription>
             <FormMessage />
           </FormItem>

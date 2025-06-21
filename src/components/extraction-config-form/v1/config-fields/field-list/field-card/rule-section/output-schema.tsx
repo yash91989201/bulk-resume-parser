@@ -120,7 +120,7 @@ export function OutputSchema({ fieldIndex }: OutputSchemaProps) {
                 {...field}
                 value={
                   Array.isArray(field.value)
-                    ? field.value.join(", ")
+                    ? field.value.join(",")
                     : field.value
                 }
                 onChange={(e) => {

@@ -13,7 +13,7 @@ export const ConfigActions = () => {
         variant="outline"
         size="sm"
         className="gap-1.5"
-        disabled={formState.isSubmitting}
+        disabled={!formState.isDirty || formState.isSubmitting}
       >
         <RotateCcw className="size-4" />
         Reset
@@ -22,7 +22,7 @@ export const ConfigActions = () => {
         size="sm"
         type="submit"
         className="gap-1.5"
-        disabled={formState.isSubmitting}
+        disabled={!formState.isDirty || formState.isSubmitting}
       >
         {formState.isSubmitting ? (
           <Loader2 className="size-4 animate-spin" />

@@ -6,6 +6,7 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { ExtractionConfigInputSchema } from "@/lib/extraction-config/schema";
 import { DeleteExtractionConfigInput } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { z } from "zod/v4";
 
 export const extractionConfigRouter = createTRPCRouter({
   create: protectedProcedure
@@ -45,6 +46,12 @@ export const extractionConfigRouter = createTRPCRouter({
         };
       }
     }),
+
+  get: protectedProcedure.input(z.cuid2()).query(({ ctx, input: configId }) => {
+    return ctx.db.query.extractionConfigTable.findFirst({
+      where: eq(extractionConfigTable.id, configId),
+    });
+  }),
 
   getAll: protectedProcedure.query(({ ctx }) => {
     return ctx.db.query.extractionConfigTable.findMany();

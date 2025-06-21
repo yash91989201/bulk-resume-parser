@@ -99,7 +99,7 @@ export const ParsingTaskCard = ({ task }: { task: ParsingTaskType }) => {
                 {isDownloadJsonPending && (
                   <Loader2 className="mr-3 animate-spin" />
                 )}
-                Download sheet
+                Download json
               </Button>
             )}
           </div>

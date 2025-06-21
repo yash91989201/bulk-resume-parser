@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export const ExtractionConfigCard = ({
   id,
@@ -39,12 +40,17 @@ export const ExtractionConfigCard = ({
   name: string;
   config: ExtractionConfigType;
 }) => {
-  const { version, description, fields } = config;
   const api = useTRPC();
+
+  const router = useRouter();
+  const { version, description, fields } = config;
   const { mutateAsync } = useMutation(
     api.extractionConfig.delete.mutationOptions(),
   );
 
+  const editExtractionConfig = () => {
+    router.push(`/dashboard/extraction-config/edit/${id}`);
+  };
   const deleteExtractionConfig = async () => {
     const actionRes = await mutateAsync({ configId: id });
     if (actionRes.status === "SUCCESS") {
@@ -71,7 +77,7 @@ export const ExtractionConfigCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={editExtractionConfig}>
                 <Pencil className="mr-2 h-4 w-4" />
                 <span>Edit</span>
               </DropdownMenuItem>
@@ -115,7 +121,7 @@ const V0FieldConfigDetails = ({
         <span className="font-semibold">Prompt:</span> {field.prompt}
       </p>
       <p>
-        <span className="font-semibold">Example:</span> {field.example}
+        <span className="font-semibold">Output Example:</span> {field.example}
       </p>
     </div>
   );
