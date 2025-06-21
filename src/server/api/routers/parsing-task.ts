@@ -1,6 +1,6 @@
 // UTILS
 import { publishToQueue } from "@/server/utils";
-import { parsingTaskTable } from "@/server/db/schema";
+import { parseableFileTable, parsingTaskTable } from "@/server/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 // SCHEMAS
 import {
@@ -95,6 +95,44 @@ export const parsingTaskRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(DeleteParsingTaskInput)
     .mutation(async ({ ctx, input }) => {
+      const parsingTask = await ctx.db.query.parsingTaskTable.findFirst({
+        where: eq(parsingTaskTable.id, input.taskId),
+      });
+
+      if (!parsingTask) {
+        return;
+      }
+
+      const parseableFiles = await ctx.db.query.parseableFileTable.findMany({
+        where: eq(parseableFileTable.parsingTaskId, input.taskId),
+      });
+
+      // delete all task files
+      if (parseableFiles.length > 0) {
+        const fileNames = parseableFiles.map((f) => f.filePath);
+        await ctx.s3.deleteFiles({
+          bucketName: "parseable-files",
+          fileNames,
+        });
+
+        await ctx.s3.deleteFiles({
+          bucketName: "processed-txt-files",
+          fileNames,
+        });
+
+        await ctx.s3.deleteFiles({
+          bucketName: "processed-json-files",
+          fileNames,
+        });
+
+        if (parsingTask.jsonFilePath && parsingTask.sheetFilePath) {
+          await ctx.s3.deleteFiles({
+            bucketName: "aggregated-results",
+            fileNames: [parsingTask.jsonFilePath, parsingTask.sheetFilePath],
+          });
+        }
+      }
+
       const deleteQuery = await ctx.db
         .delete(parsingTaskTable)
         .where(eq(parsingTaskTable.id, input.taskId));

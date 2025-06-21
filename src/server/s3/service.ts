@@ -33,6 +33,15 @@ interface S3ServiceInterface {
     fileName: string;
     expiry?: number;
   }) => Promise<string>;
+
+  deleteFile: (params: {
+    bucketName: S3BucketType;
+    fileName: string;
+  }) => Promise<void>;
+  deleteFiles: (params: {
+    bucketName: S3BucketType;
+    fileNames: string[];
+  }) => Promise<void>;
 }
 
 export class S3Service implements S3ServiceInterface {
@@ -128,5 +137,29 @@ export class S3Service implements S3ServiceInterface {
     const { bucketName, fileName, expiry = this.downloadUrlExpiry } = params;
 
     return await this.s3Client.presignedGetObject(bucketName, fileName, expiry);
+  }
+
+  async deleteFile(params: {
+    bucketName: S3BucketType;
+    fileName: string;
+  }): Promise<void> {
+    const { bucketName, fileName } = params;
+
+    const fileExists = await this.checkFileExists({
+      bucketName,
+      fileName,
+    });
+
+    if (fileExists) {
+      await this.s3Client.removeObject(bucketName, fileName);
+    }
+  }
+
+  async deleteFiles(params: {
+    bucketName: S3BucketType;
+    fileNames: string[];
+  }): Promise<void> {
+    const { bucketName, fileNames } = params;
+    await this.s3Client.removeObjects(bucketName, fileNames);
   }
 }
