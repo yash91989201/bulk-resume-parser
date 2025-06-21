@@ -1,4 +1,5 @@
 import { ExtractionConfigCard } from "@/components/extraction-config-card";
+import { auth } from "@/server/utils/auth";
 import { caller } from "@/trpc/server";
 import { buttonVariants } from "@/ui/button";
 import {
@@ -9,9 +10,19 @@ import {
 } from "@/ui/dropdown-menu";
 import { Separator } from "@/ui/separator";
 import { ChevronDown, Plus } from "lucide-react";
+import { headers } from "next/headers";
 import Link from "next/link";
+import { unauthorized } from "next/navigation";
 
 export default async function Page() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session == null) {
+    unauthorized();
+  }
+
   const extractionConfigs = await caller.extractionConfig.getAll();
 
   return (

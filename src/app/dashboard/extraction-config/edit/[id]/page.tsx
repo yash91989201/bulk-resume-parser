@@ -1,14 +1,25 @@
 import { EmptyState } from "@/components/empty-state";
 import { ExtractionConfigV0Form } from "@/components/extraction-config-form/v0";
 import { ExtractionConfigV1Form } from "@/components/extraction-config-form/v1";
+import { auth } from "@/server/utils/auth";
 import { caller } from "@/trpc/server";
 import { AlertTriangle, FileX } from "lucide-react";
+import { headers } from "next/headers";
+import { unauthorized } from "next/navigation";
 
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session == null) {
+    unauthorized();
+  }
+
   const id = (await params).id;
 
   const extractionConfig = await caller.extractionConfig.get(id);
