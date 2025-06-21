@@ -9,7 +9,6 @@ const nextConfig = {
   output: "standalone",
   experimental: {
     authInterrupts: true,
-    allowDevelopmentBuild: true,
   },
   typescript: {
     ignoreBuildErrors: true,

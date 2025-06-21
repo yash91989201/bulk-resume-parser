@@ -14,6 +14,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    env_file:
+      - .env.docker
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
@@ -46,6 +48,8 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    env_file:
+      - .env.docker
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
@@ -62,6 +66,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
   conversion-director:
     build:
@@ -75,6 +81,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
   word-to-txt:
     build:
@@ -88,6 +96,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
   pdf-to-txt:
     build:
@@ -101,6 +111,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
   img-to-txt:
     build:
@@ -114,6 +126,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
   txt-to-json:
     build:
@@ -127,6 +141,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
   aggregate-json:
     build:
@@ -140,6 +156,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
   json-to-sheet:
     build:
@@ -155,6 +173,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env.docker
 
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -182,6 +202,8 @@ services:
       - bulk-resume-parser
     ports:
       - "3000:3000"
+    env_file:
+      - .env.docker
     volumes:
       - .:/app
       - /app/node_modules
@@ -193,6 +215,8 @@ services:
       - bulk-resume-parser
     ports:
       - "${DB_PORT}:${DB_PORT}"
+    env_file:
+      - .env.docker
     volumes:
       - app-db-data:/var/lib/mysql
     environment:
@@ -219,6 +243,8 @@ services:
     container_name: app-db-migrator
     networks:
       - bulk-resume-parser
+    env_file:
+      - .env.docker
     depends_on:
       app-db:
         condition: service_healthy
