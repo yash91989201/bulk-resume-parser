@@ -17,7 +17,8 @@ COPY . .
 # Set env to bypass validation
 ENV SKIP_ENV_VALIDATION=true
 
-RUN BETTER_AUTH_SECRET="$BETTER_AUTH_SECRET" bun run build
+RUN --mount=type=secret,id=BETTER_AUTH_SECRET,required=true BETTER_AUTH_SECRET=$(cat /run/secrets/BETTER_AUTH_SECRET) bun run build
+
 
 # =========================
 # Stage 2: Production Stage

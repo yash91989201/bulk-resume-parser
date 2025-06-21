@@ -1,5 +1,9 @@
 name: "bulk-resume-parser"
 
+secrets:
+  better_auth_secret:
+    environment: BETTER_AUTH_SECRET
+
 volumes:
   redis-data:
   minio-data:
@@ -8,7 +12,6 @@ volumes:
 services:
   rabbitmq:
     image: rabbitmq:management
-    container_name: rabbitmq
     networks:
       - bulk-resume-parser
     ports:
@@ -23,7 +26,6 @@ services:
 
   redis:
     image: redis:latest
-    container_name: redis
     restart: always
     networks:
       - bulk-resume-parser
@@ -40,7 +42,6 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
-    container_name: minio
     networks:
       - bulk-resume-parser
     ports:
@@ -54,7 +55,6 @@ services:
     build:
       context: ./services/extract-archive
     image: yash6370/extract-archive-service:latest
-    container_name: extract-archive
     networks:
       - bulk-resume-parser
     depends_on:
@@ -67,7 +67,6 @@ services:
     build:
       context: ./services/conversion-director
     image: yash6370/conversion-director:latest
-    container_name: conversion-director
     networks:
       - bulk-resume-parser
     depends_on:
@@ -80,7 +79,6 @@ services:
     build:
       context: ./services/word-to-txt
     image: yash6370/word-to-txt-service:latest
-    container_name: word-to-txt
     networks:
       - bulk-resume-parser
     depends_on:
@@ -93,7 +91,6 @@ services:
     build:
       context: ./services/pdf-to-txt
     image: yash6370/pdf-to-txt-service:latest
-    container_name: pdf-to-txt
     networks:
       - bulk-resume-parser
     depends_on:
@@ -106,7 +103,6 @@ services:
     build:
       context: ./services/img-to-txt
     image: yash6370/img-to-txt-service:latest
-    container_name: img-to-txt
     networks:
       - bulk-resume-parser
     depends_on:
@@ -119,7 +115,6 @@ services:
     build:
       context: ./services/txt-to-json
     image: yash6370/txt-to-json-service:latest
-    container_name: txt-to-json
     networks:
       - bulk-resume-parser
     depends_on:
@@ -132,7 +127,6 @@ services:
     build:
       context: ./services/aggregate-json
     image: yash6370/aggregate-json-service:latest
-    container_name: aggregate_json
     networks:
       - bulk-resume-parser
     depends_on:
@@ -145,7 +139,6 @@ services:
     build:
       context: ./services/json-to-sheet
     image: yash6370/json-to-sheet-service:latest
-    container_name: json-to-sheet
     networks:
       - bulk-resume-parser
     depends_on:
@@ -165,7 +158,6 @@ services:
 
   unoserver:
     image: ghcr.io/unoconv/unoserver-docker
-    container_name: unoserver
     networks:
       - bulk-resume-parser
     ports:
@@ -176,19 +168,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      secrets:
+        - better_auth_secret
     image: yash6370/bulk-resume-parser:latest
-    container_name: app
     networks:
       - bulk-resume-parser
     ports:
       - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
 
   app-db:
     image: mysql:latest
-    container_name: app-db
     networks:
       - bulk-resume-parser
     ports:
@@ -216,7 +205,6 @@ services:
       context: .
       dockerfile: db-migrator.Dockerfile
     image: yash6370/app-db-migrator:latest
-    container_name: app-db-migrator
     networks:
       - bulk-resume-parser
     depends_on:
