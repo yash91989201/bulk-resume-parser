@@ -22,8 +22,9 @@ minio_client = Minio(
     endpoint=MINIO_CONFIG.ENDPOINT,
     access_key=MINIO_CONFIG.ACCESS_KEY,
     secret_key=MINIO_CONFIG.SECRET_KEY,
-    secure=MINIO_CONFIG.SECURE
+    secure=MINIO_CONFIG.SECURE,
 )
+
 
 class TaskStatus(Enum):
     CREATED = "created"
@@ -33,6 +34,7 @@ class TaskStatus(Enum):
     AGGREGATING = "aggregating"
     COMPLETED = "completed"
     FAILED = "failed"
+
 
 @dataclass
 class ParsingTask:
@@ -61,6 +63,7 @@ class ParsingTask:
             "userId": self.userId,
         }
 
+
 async def fetch_parsing_task(task_id: str) -> ParsingTask:
     """Fetches the parsing task status from the API and returns a ParsingTask object."""
     url = f"{SERVICE_CONFIG.NEXT_API_URL}/parsing-task?taskId={task_id}"
@@ -82,7 +85,10 @@ async def fetch_parsing_task(task_id: str) -> ParsingTask:
                     userId=parsing_task["userId"],
                 )
             else:
-                raise Exception(f"Failed to fetch parsing task status: {response.status}")
+                raise Exception(
+                    f"Failed to fetch parsing task status: {response.status}"
+                )
+
 
 async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
     """
@@ -97,6 +103,7 @@ async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
             else:
                 return False
 
+
 async def download_json_file(file_path: str) -> str:
     """
     Downloads a JSON file from MinIO to the local directory.
@@ -107,9 +114,14 @@ async def download_json_file(file_path: str) -> str:
     Returns:
         The local file path.
     """
-    local_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
-    minio_client.fget_object(MINIO_BUCKETS.AGGREGATED_RESULTS, file_path, local_file_path)
+    local_file_path = os.path.join(
+        SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path)
+    )
+    minio_client.fget_object(
+        MINIO_BUCKETS.AGGREGATED_RESULTS, file_path, local_file_path
+    )
     return local_file_path
+
 
 async def convert_json_to_excel(json_file_path: str, excel_file_path: str):
     """
@@ -122,7 +134,9 @@ async def convert_json_to_excel(json_file_path: str, excel_file_path: str):
     with open(json_file_path, "r") as json_file:
         data = json.load(json_file)
         df = pd.DataFrame(data)
+        df.columns = [col.replace("_", " ").title() for col in df.columns]
         df.to_excel(excel_file_path, index=False)
+
 
 async def upload_excel_file(user_id: str, task_id: str, excel_file_path: str) -> str:
     """
@@ -138,8 +152,11 @@ async def upload_excel_file(user_id: str, task_id: str, excel_file_path: str) ->
     """
     excel_filename = os.path.basename(excel_file_path)
     minio_object_path = os.path.join(user_id, task_id, excel_filename)
-    minio_client.fput_object(MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, excel_file_path)
+    minio_client.fput_object(
+        MINIO_BUCKETS.AGGREGATED_RESULTS, minio_object_path, excel_file_path
+    )
     return minio_object_path
+
 
 async def cleanup_files(file_paths: List[str]):
     """
@@ -153,6 +170,7 @@ async def cleanup_files(file_paths: List[str]):
             logger.warning(f"File not found: {file_path}")
         except Exception as e:
             logger.error(f"Error deleting {file_path}: {e}")
+
 
 async def send_message_to_queue(queue_name: str, message: dict):
     """
@@ -168,7 +186,7 @@ async def send_message_to_queue(queue_name: str, message: dict):
         await channel.default_exchange.publish(
             aio_pika.Message(
                 body=json.dumps(message).encode(),
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
             ),
             routing_key=queue_name,
         )

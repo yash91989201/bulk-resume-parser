@@ -55,10 +55,10 @@ async def process_message(message: AbstractIncomingMessage):
         with open(local_path, "r") as f:
             content = f.read()
 
-        dynamicPrompt = await get_task_prompt(task_id)
+        task_prompt = await get_task_prompt(task_id)
 
-        extracted_data = await resume_data_extractor.extract_using_prompt(
-            dynamicPrompt, content
+        extracted_data = await resume_data_extractor.extract_resume_data(
+            task_prompt, content
         )
 
         logger.info(f"extract_data {extracted_data}")
