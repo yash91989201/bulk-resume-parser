@@ -100,7 +100,10 @@ export const parsingTaskRouter = createTRPCRouter({
       });
 
       if (!parsingTask) {
-        return;
+        return {
+          status: "FAILED",
+          message: "Query failed",
+        };
       }
 
       const parseableFiles = await ctx.db.query.parseableFileTable.findMany({
