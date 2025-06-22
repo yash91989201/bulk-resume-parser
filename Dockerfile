@@ -8,8 +8,10 @@ WORKDIR /app
 # Copy lockfile and manifest first for caching
 COPY package.json ./
 
+RUN npm install -g bun
 # Install dependencies
-RUN npm install --frozen-lockfile
+
+RUN bun run install
 
 # Copy the full app source
 COPY . .
