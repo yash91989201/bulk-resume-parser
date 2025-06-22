@@ -12,8 +12,7 @@ const globalForS3 = globalThis as unknown as {
 const s3Client =
   globalForS3.s3Client ??
   new Minio.Client({
-    // endPoint: env.S3_ENDPOINT,
-    endPoint: "minio",
+    endPoint: env.S3_ENDPOINT,
     port: env.S3_PORT,
     accessKey: env.S3_ACCESS_KEY,
     secretKey: env.S3_SECRET_KEY,
