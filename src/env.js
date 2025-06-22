@@ -17,10 +17,7 @@ export const env = createEnv({
       .string()
       .default("http://localhost:3000")
       .transform((val) => val.split(",").map((url) => url.trim())),
-    S3_ENDPOINT: z
-      .url()
-      .default("http://localhost:9000")
-      .transform((val) => new URL(val).hostname.split(":")[0] ?? "localhost"),
+    S3_ENDPOINT: z.string(),
     S3_PORT: z
       .string()
       .refine((val) => !isNaN(Number(val)), {
