@@ -14,11 +14,13 @@ RUN bun install --frozen-lockfile
 # Copy the full app source
 COPY . .
 
-# Set env to bypass validation
-ENV SKIP_ENV_VALIDATION=true
-
+# Build args
+ARG S3_ENDPOINT
 ARG BETTER_AUTH_SECRET
-ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
+
+ENV S3_ENDPOINT=${S3_ENDPOINT}
+ENV BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+ENV SKIP_ENV_VALIDATION=true
 
 RUN bun run build
 
