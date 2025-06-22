@@ -6,13 +6,10 @@ FROM node:24.2.0-slim  AS builder
 WORKDIR /app
 
 # Copy lockfile and manifest first for caching
-COPY bun.lock package.json ./
-
-# Install bun
-RUN npm install -g bun
+COPY package.json ./
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN npm install --frozen-lockfile
 
 # Copy the full app source
 COPY . .
@@ -28,7 +25,7 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
 
 ENV SKIP_ENV_VALIDATION=true
 
-RUN bun run build
+RUN npm run build
 
 # =========================
 # Stage 2: Production Stage
@@ -49,5 +46,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Run the Next.js standalone server with Bun
-CMD ["bun", "run","server.js"]
-
+CMD ["node","server.js"]
