@@ -1,9 +1,5 @@
 name: "bulk-resume-parser"
 
-secrets:
-  better_auth_secret:
-    environment: BETTER_AUTH_SECRET
-
 volumes:
   redis-data:
   minio-data:
@@ -168,8 +164,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      secrets:
-        - better_auth_secret
+      args:
+        - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
     image: yash6370/bulk-resume-parser:latest
     networks:
       - bulk-resume-parser
