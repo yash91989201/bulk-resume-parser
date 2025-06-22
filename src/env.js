@@ -19,9 +19,7 @@ export const env = createEnv({
     S3_ENDPOINT: z
       .url()
       .default("http://localhost:9000")
-      .transform((val) => {
-        return new URL("http://minio:9000").hostname;
-      }),
+      .transform((val) => new URL(val).hostname),
     S3_PORT: z
       .string()
       .refine((val) => !isNaN(Number(val)), {
