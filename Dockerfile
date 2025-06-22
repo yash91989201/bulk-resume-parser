@@ -1,12 +1,15 @@
 # =========================
 # Stage 1: Build Stage
 # =========================
-FROM oven/bun:1.2.17-debian  AS builder
+FROM node:24.2.0-slim  AS builder
 
 WORKDIR /app
 
 # Copy lockfile and manifest first for caching
 COPY bun.lock package.json ./
+
+# Install bun
+RUN npm install -g bun
 
 # Install dependencies
 RUN bun install --frozen-lockfile
@@ -30,7 +33,7 @@ RUN bun run build
 # =========================
 # Stage 2: Production Stage
 # =========================
-FROM oven/bun:1.2.17-debian  AS runner
+FROM node:24.2.0-slim  AS runner
 
 WORKDIR /app
 
