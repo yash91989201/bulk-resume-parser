@@ -141,7 +141,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        - S3_ENDPOINT=${S3_ENDPOINT}
         - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+        - NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
     image: yash6370/bulk-resume-parser:latest
     ports:
       - "3000:3000"
