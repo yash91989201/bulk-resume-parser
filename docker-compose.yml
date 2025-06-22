@@ -8,8 +8,6 @@ volumes:
 services:
   rabbitmq:
     image: rabbitmq:management
-    networks:
-      - bulk-resume-parser
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -23,8 +21,6 @@ services:
   redis:
     image: redis:latest
     restart: always
-    networks:
-      - bulk-resume-parser
     ports:
       - "6379:6379"
     healthcheck:
@@ -38,8 +34,6 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
-    networks:
-      - bulk-resume-parser
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -51,8 +45,6 @@ services:
     build:
       context: ./services/extract-archive
     image: yash6370/extract-archive-service:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -63,8 +55,6 @@ services:
     build:
       context: ./services/conversion-director
     image: yash6370/conversion-director:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -75,8 +65,6 @@ services:
     build:
       context: ./services/word-to-txt
     image: yash6370/word-to-txt-service:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -87,8 +75,6 @@ services:
     build:
       context: ./services/pdf-to-txt
     image: yash6370/pdf-to-txt-service:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -99,8 +85,6 @@ services:
     build:
       context: ./services/img-to-txt
     image: yash6370/img-to-txt-service:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -111,8 +95,6 @@ services:
     build:
       context: ./services/txt-to-json
     image: yash6370/txt-to-json-service:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -123,8 +105,6 @@ services:
     build:
       context: ./services/aggregate-json
     image: yash6370/aggregate-json-service:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -135,8 +115,6 @@ services:
     build:
       context: ./services/json-to-sheet
     image: yash6370/json-to-sheet-service:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -154,8 +132,6 @@ services:
 
   unoserver:
     image: ghcr.io/unoconv/unoserver-docker
-    networks:
-      - bulk-resume-parser
     ports:
       - "2003:2003"
     restart: unless-stopped
@@ -167,15 +143,11 @@ services:
       args:
         - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
     image: yash6370/bulk-resume-parser:latest
-    networks:
-      - bulk-resume-parser
     ports:
       - "3000:3000"
 
   app-db:
     image: mysql:latest
-    networks:
-      - bulk-resume-parser
     ports:
       - "${DB_PORT}:${DB_PORT}"
     volumes:
@@ -201,13 +173,7 @@ services:
       context: .
       dockerfile: db-migrator.Dockerfile
     image: yash6370/app-db-migrator:latest
-    networks:
-      - bulk-resume-parser
     depends_on:
       app-db:
         condition: service_healthy
     restart: on-failure
-
-networks:
-  bulk-resume-parser:
-    name: bulk-resume-parser
