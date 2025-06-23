@@ -18,7 +18,7 @@ logger = logging.getLogger("rabbitmq_consumer")
 
 # Minio Client
 minio_client = Minio(
-    MINIO_CONFIG.ENDPOINT,
+    endpoint=MINIO_CONFIG.ENDPOINT,
     access_key=MINIO_CONFIG.ACCESS_KEY,
     secret_key=MINIO_CONFIG.SECRET_KEY,
     secure=MINIO_CONFIG.SECURE,
