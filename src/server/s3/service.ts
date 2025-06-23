@@ -8,7 +8,6 @@ interface S3ServiceInterface {
   uploadUrlExpiry: number;
   downloadUrlExpiry: number;
 
-  createBucket: (bucketName: S3BucketType) => Promise<void>;
   saveFile: (params: {
     bucketName: S3BucketType;
     fileName: string;
@@ -59,22 +58,12 @@ export class S3Service implements S3ServiceInterface {
     this.downloadUrlExpiry = downloadUrlExpiry;
   }
 
-  async createBucket(bucketName: S3BucketType): Promise<void> {
-    const bucketExists = await this.s3Client.bucketExists(bucketName);
-
-    if (!bucketExists) {
-      await this.s3Client.makeBucket(bucketName);
-    }
-  }
-
   async saveFile(params: {
     bucketName: S3BucketType;
     fileName: string;
     file: Buffer | Readable;
   }): Promise<void> {
     const { bucketName, fileName, file } = params;
-
-    await this.createBucket(bucketName);
 
     const fileExists = await this.checkFileExists({
       bucketName,
@@ -123,8 +112,6 @@ export class S3Service implements S3ServiceInterface {
     expiry?: number;
   }): Promise<string> {
     const { bucketName, fileName, expiry = this.uploadUrlExpiry } = params;
-
-    await this.createBucket(bucketName);
 
     return await this.s3Client.presignedPutObject(bucketName, fileName, expiry);
   }
