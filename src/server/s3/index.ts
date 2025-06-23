@@ -13,7 +13,7 @@ const s3Client =
   globalForS3.s3Client ??
   new Minio.Client({
     endPoint: env.S3_ENDPOINT,
-    port: env.NODE_ENV === "development" ? env.S3_PORT : undefined,
+    port: env.S3_PORT,
     accessKey: env.S3_ACCESS_KEY,
     secretKey: env.S3_SECRET_KEY,
     useSSL: env.S3_USE_SSL,
