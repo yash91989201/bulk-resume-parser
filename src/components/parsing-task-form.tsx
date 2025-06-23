@@ -116,14 +116,23 @@ export const ParsingTaskForm = () => {
 
       const taskId = createParsingTaskRes.data.taskId;
 
-      const { bucketFilesInfo } = await getTaskFileUploadUrl({
+      const { status, message, data } = await getTaskFileUploadUrl({
         taskId,
         filesMetadata: filesMetadata,
         bucketName: allArchiveFiles ? "archive-files" : "parseable-files",
       });
 
+      if (status === "FAILED") {
+        throw new Error(message);
+      }
+
+      const bucketFilesInfo = data?.bucketFilesInfo;
+      if (bucketFilesInfo === undefined) {
+        throw new Error("bucketFilesInfo not found");
+      }
+
       await uploadTaskFiles({
-        bucketFilesInfo,
+        bucketFilesInfo: bucketFilesInfo,
         files: taskFilesState.map((file) => file.file),
         progressCallback: (fileIndex, progress, estimatedTimeRemaining) => {
           setValue(`taskFilesState.${fileIndex}.progress`, progress);
