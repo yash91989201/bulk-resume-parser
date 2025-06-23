@@ -163,9 +163,7 @@ export const ParsingTaskForm = () => {
         toast.message(error.message);
       }
     } finally {
-      reset({
-        extractionConfigId: "",
-      });
+      reset();
     }
   };
 
