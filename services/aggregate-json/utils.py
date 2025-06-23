@@ -142,16 +142,21 @@ async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> 
     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_id}-result.json")
     logger.info(f"Uploading aggregated JSON for task: {task_name}")
     try:
-        # Read JSON Lines asynchronously.
-        async with aiofiles.open(json_file_path, "r") as f:
-            lines = await f.readlines()
-        # Process JSON using a fast library.
-        data = [orjson.loads(line) for line in lines]
-
-        # Write out the aggregated JSON as a temporary file.
         temp_json_path = json_file_path + "-upload.json"
-        async with aiofiles.open(temp_json_path, "wb") as f:
-            await f.write(orjson.dumps(data))
+
+        # Stream-process the JSON Lines file to create a single JSON array, which is more memory-efficient.
+        async with aiofiles.open(temp_json_path, "w") as f_out:
+            await f_out.write("[")
+            is_first_line = True
+            async with aiofiles.open(json_file_path, "r") as f_in:
+                async for line in f_in:
+                    line = line.strip()
+                    if line:
+                        if not is_first_line:
+                            await f_out.write(",")
+                        await f_out.write(line)
+                        is_first_line = False
+            await f_out.write("]")
 
         # Offload the blocking upload to a thread.
         minio_object_path = os.path.join(user_id, task_id, f"{task_name}-result.json")
