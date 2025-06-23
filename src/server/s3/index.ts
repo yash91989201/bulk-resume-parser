@@ -13,11 +13,11 @@ const s3Client =
   globalForS3.s3Client ??
   new Minio.Client({
     endPoint: env.S3_ENDPOINT,
-    port: env.S3_PORT,
+    port: env.NODE_ENV === "development" ? env.S3_PORT : undefined,
     accessKey: env.S3_ACCESS_KEY,
     secretKey: env.S3_SECRET_KEY,
     useSSL: env.S3_USE_SSL,
-    region: "us-east-1", // ✅ fake but required to skip discovery
+    region: "us-east-1",
   });
 
 if (env.NODE_ENV !== "production") globalForS3.s3Client = s3Client;
