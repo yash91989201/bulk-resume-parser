@@ -2,6 +2,7 @@ import type { S3BucketType } from "@/lib/types";
 import type * as Minio from "minio";
 import type internal from "stream";
 import type { Readable } from "stream";
+import type { BucketItem } from "minio";
 
 interface S3ServiceInterface {
   s3Client: Minio.Client;
@@ -17,6 +18,10 @@ interface S3ServiceInterface {
     bucketName: S3BucketType;
     fileName: string;
   }) => Promise<Readable | null>;
+  getBucketFiles: (params: {
+    bucketName: S3BucketType;
+    prefix: string;
+  }) => Promise<string[]>;
   checkFileExists: (params: {
     bucketName: S3BucketType;
     fileName: string;
@@ -56,6 +61,20 @@ export class S3Service implements S3ServiceInterface {
     this.s3Client = s3Client;
     this.uploadUrlExpiry = uploadUrlExpiry;
     this.downloadUrlExpiry = downloadUrlExpiry;
+  }
+  async getBucketFiles(params: {
+    bucketName: S3BucketType;
+    prefix: string;
+  }): Promise<string[]> {
+    const { bucketName, prefix } = params;
+    const bucketStream = this.s3Client.listObjectsV2(bucketName, prefix);
+
+    const filePaths: string[] = [];
+    for await (const obj of bucketStream as AsyncIterable<BucketItem>) {
+      if (obj.name) filePaths.push(obj.name);
+    }
+
+    return filePaths;
   }
 
   async saveFile(params: {

@@ -110,22 +110,33 @@ export const parsingTaskRouter = createTRPCRouter({
         where: eq(parseableFileTable.parsingTaskId, input.taskId),
       });
 
-      // delete all task files
+      // delete all task related files
       if (parseableFiles.length > 0) {
-        const fileNames = parseableFiles.map((f) => f.filePath);
+        const parseableFileNames = parseableFiles.map((f) => f.filePath);
+
+        const archiveFiles = await ctx.s3.getBucketFiles({
+          bucketName: "archive-files",
+          prefix: `${parsingTask.userId}/${parsingTask.id}`,
+        });
+
+        await ctx.s3.deleteFiles({
+          bucketName: "archive-files",
+          fileNames: archiveFiles,
+        });
+
         await ctx.s3.deleteFiles({
           bucketName: "parseable-files",
-          fileNames,
+          fileNames: parseableFileNames,
         });
 
         await ctx.s3.deleteFiles({
           bucketName: "processed-txt-files",
-          fileNames,
+          fileNames: parseableFileNames,
         });
 
         await ctx.s3.deleteFiles({
           bucketName: "processed-json-files",
-          fileNames,
+          fileNames: parseableFileNames,
         });
 
         if (parsingTask.jsonFilePath && parsingTask.sheetFilePath) {
