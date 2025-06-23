@@ -8,7 +8,7 @@ class MINIO_CONFIG:
     ENDPOINT = os.getenv("S3_ENDPOINT", "localhost:9000")
     ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
     SECRET_KEY = os.getenv("S3_SECRET_KEY")
-    SECURE = os.getenv("S3_SECURE", "False").lower() == "true"
+    SECURE = os.getenv("S3_USE_SSL", "False").lower() == "true"
 
 
 class MINIO_BUCKETS:
