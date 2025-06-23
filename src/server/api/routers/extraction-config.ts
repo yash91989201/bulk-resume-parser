@@ -7,6 +7,7 @@ import { ExtractionConfigInputSchema } from "@/lib/extraction-config/schema";
 import { DeleteExtractionConfigInput } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
+import { revalidatePath } from "next/cache";
 
 export const extractionConfigRouter = createTRPCRouter({
   create: protectedProcedure
@@ -29,6 +30,7 @@ export const extractionConfigRouter = createTRPCRouter({
           };
         }
 
+        revalidatePath("/dashboard/extraction-config");
         return {
           status: "SUCCESS",
           message: "Extraction config saved successfully",
