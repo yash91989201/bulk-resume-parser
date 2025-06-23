@@ -18,7 +18,7 @@ export const env = createEnv({
       .refine((urls) => urls.every((url) => z.url().safeParse(url).success), {
         message: "All trusted origins must be valid URLs.",
       }),
-    S3_ENDPOINT: z.url().default("http://minio:9000"),
+    S3_ENDPOINT: z.string().default("minio"),
     S3_PORT: z
       .string()
       .refine((val) => !isNaN(Number(val)), {
