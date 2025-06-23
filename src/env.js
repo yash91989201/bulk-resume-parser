@@ -14,12 +14,11 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_TRUSTED_ORIGINS: z
       .string()
-      .default("http://localhost:3000")
-      .transform((val) => val.split(",").map((url) => url.trim())),
-    S3_ENDPOINT: z
-      .url()
-      .default("http://localhost:9000")
-      .transform((val) => new URL(val).hostname),
+      .transform((val) => val.split(",").map((url) => url.trim()))
+      .refine((urls) => urls.every((url) => z.url().safeParse(url).success), {
+        message: "All trusted origins must be valid URLs.",
+      }),
+    S3_ENDPOINT: z.url().default("http://minio:9000"),
     S3_PORT: z
       .string()
       .refine((val) => !isNaN(Number(val)), {

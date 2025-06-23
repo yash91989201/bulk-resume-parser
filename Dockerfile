@@ -1,20 +1,14 @@
-# =========================
 # Stage 1: Build Stage
-# =========================
-FROM node:24.2.0-slim  AS builder
+FROM oven/bun:1.2.17-debian AS builder
 
 WORKDIR /app
 
-# Copy lockfile and manifest first for caching
-COPY package.json ./
+COPY bun.lock package.json ./
 
-# Install dependencies
-RUN npm install
+RUN bun install --freeze-lockfile
 
-# Copy the full app source
 COPY . .
 
-# Build args
 ARG S3_ENDPOINT
 ARG BETTER_AUTH_SECRET
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -25,25 +19,17 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
 
 ENV SKIP_ENV_VALIDATION=true
 
-RUN npm run build
+RUN bun run build
 
-# =========================
 # Stage 2: Production Stage
-# =========================
-FROM node:24.2.0-slim  AS runner
+FROM node:24-alpine3.21  AS runner
 
 WORKDIR /app
 
-# Copy the standalone output — content, not folder
 COPY --from=builder /app/.next/standalone/ . 
-
-# Copy public assets and static files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 
-ENV NODE_ENV=production
-ENV PORT=3000
 EXPOSE 3000
 
-# Run the Next.js standalone server with Bun
 CMD ["node","server.js"]
