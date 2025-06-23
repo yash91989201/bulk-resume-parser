@@ -28,10 +28,3 @@ class QUEUES:
     PDF_TO_TXT = "pdf_to_txt_queue"
     TXT_TO_JSON = "txt_to_json_queue"
     CONVERSION_DIRECTOR = "conversion_director_queue"
-
-
-# class MINIO_BUCKETS:
-#     AGGREGATED_RESULTS = "aggregated-results"
-#     ARCHIVE_FILES = "archive-files"
-#     PARSEABLE_FILES = "parseable-files"
-#     PROCESSED_TXT_FILES = "processed-txt-files"

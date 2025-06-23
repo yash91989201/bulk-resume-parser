@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/ui/button";
 import {
@@ -41,6 +41,7 @@ export const ExtractionConfigCard = ({
   config: ExtractionConfigType;
 }) => {
   const api = useTRPC();
+  const queryClient = useQueryClient();
 
   const router = useRouter();
   const { version, description, fields } = config;
@@ -54,6 +55,10 @@ export const ExtractionConfigCard = ({
   const deleteExtractionConfig = async () => {
     const actionRes = await mutateAsync({ configId: id });
     if (actionRes.status === "SUCCESS") {
+      await queryClient.refetchQueries(
+        api.extractionConfig.getAll.queryOptions(),
+      );
+
       toast.success(actionRes.message);
     } else {
       toast.error(actionRes.message);
