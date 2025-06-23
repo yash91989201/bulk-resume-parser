@@ -24,8 +24,9 @@ minio_client = Minio(
     endpoint=MINIO_CONFIG.ENDPOINT,
     access_key=MINIO_CONFIG.ACCESS_KEY,
     secret_key=MINIO_CONFIG.SECRET_KEY,
-    secure=MINIO_CONFIG.SECURE
+    secure=MINIO_CONFIG.SECURE,
 )
+
 
 class TaskStatus(Enum):
     CREATED = "created"
@@ -35,6 +36,7 @@ class TaskStatus(Enum):
     AGGREGATING = "aggregating"
     COMPLETED = "completed"
     FAILED = "failed"
+
 
 @dataclass
 class ParsingTask:
@@ -63,6 +65,7 @@ class ParsingTask:
             "userId": self.userId,
         }
 
+
 async def fetch_parsing_task(task_id: str) -> ParsingTask:
     """Fetches the parsing task status from the API and returns a ParsingTask object."""
     url = f"{SERVICE_CONFIG.NEXT_API_URL}/parsing-task?taskId={task_id}"
@@ -87,7 +90,10 @@ async def fetch_parsing_task(task_id: str) -> ParsingTask:
                 )
             else:
                 logger.error(f"Failed to fetch parsing task status: {response.status}")
-                raise Exception(f"Failed to fetch parsing task status: {response.status}")
+                raise Exception(
+                    f"Failed to fetch parsing task status: {response.status}"
+                )
+
 
 async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
     """
@@ -105,18 +111,22 @@ async def update_parsing_task(task_id: str, updated_parsing_task: dict) -> bool:
                 logger.error(f"Failed to update parsing task: {response.status}")
                 return False
 
+
 async def download_json_file(file_path: str) -> str:
-    local_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path))
+    local_file_path = os.path.join(
+        SERVICE_CONFIG.DOWNLOAD_DIR, os.path.basename(file_path)
+    )
     loop = asyncio.get_running_loop()
     # Offload the blocking call to a thread.
     await loop.run_in_executor(
-        None, 
+        None,
         minio_client.fget_object,
         MINIO_BUCKETS.PROCESSED_JSON_FILES,
         file_path,
-        local_file_path
+        local_file_path,
     )
     return local_file_path
+
 
 async def append_to_json_file(task_id: str, data: Dict):
     """Appends data as a new JSON line without locks."""
@@ -127,33 +137,44 @@ async def append_to_json_file(task_id: str, data: Dict):
         line = orjson.dumps(data).decode() + "\n"
         await f.write(line)
 
+
 async def upload_aggregated_json(user_id: str, task_id: str, task_name: str) -> str:
     json_file_path = os.path.join(SERVICE_CONFIG.DOWNLOAD_DIR, f"{task_id}-result.json")
     logger.info(f"Uploading aggregated JSON for task: {task_name}")
-    # Read JSON Lines asynchronously.
-    async with aiofiles.open(json_file_path, "r") as f:
-        lines = await f.readlines()
-    # Process JSON using a fast library.
-    data = [orjson.loads(line) for line in lines]
-    
-    # Write out the aggregated JSON as a temporary file.
-    temp_json_path = json_file_path + "-upload.json"
-    async with aiofiles.open(temp_json_path, "wb") as f:
-        await f.write(orjson.dumps(data))
-    
-    # Offload the blocking upload to a thread.
-    minio_object_path = os.path.join(user_id, task_id, f"{task_name}-result.json")
+    try:
+        # Read JSON Lines asynchronously.
+        async with aiofiles.open(json_file_path, "r") as f:
+            lines = await f.readlines()
+        # Process JSON using a fast library.
+        data = [orjson.loads(line) for line in lines]
 
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(
-        None,
-        minio_client.fput_object,
-        MINIO_BUCKETS.AGGREGATED_RESULTS,
-        minio_object_path,
-        temp_json_path
-    )
+        # Write out the aggregated JSON as a temporary file.
+        temp_json_path = json_file_path + "-upload.json"
+        async with aiofiles.open(temp_json_path, "wb") as f:
+            await f.write(orjson.dumps(data))
 
-    return minio_object_path
+        # Offload the blocking upload to a thread.
+        minio_object_path = os.path.join(user_id, task_id, f"{task_name}-result.json")
+
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            minio_client.fput_object,
+            MINIO_BUCKETS.AGGREGATED_RESULTS,
+            minio_object_path,
+            temp_json_path,
+        )
+
+        return minio_object_path
+    except FileNotFoundError:
+        logger.error(f"JSON result file not found for task: {task_id}")
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error during JSON aggregation and upload for task {task_id}: {e}"
+        )
+        raise
+
 
 async def cleanup_files(file_paths: List[str]):
     loop = asyncio.get_running_loop()
@@ -165,6 +186,7 @@ async def cleanup_files(file_paths: List[str]):
             logger.warning(f"File not found: {file_path}")
         except Exception as e:
             logger.error(f"Error deleting {file_path}: {e}")
+
 
 async def send_message_to_queue(queue_name: str, message: Dict):
     """
@@ -180,20 +202,23 @@ async def send_message_to_queue(queue_name: str, message: Dict):
         await channel.default_exchange.publish(
             aio_pika.Message(
                 body=json.dumps(message).encode(),
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
             ),
             routing_key=queue_name,
         )
         logger.debug(f"Message sent to {queue_name}: {message}")
 
+
 def should_update_processed_file_count(total_files: int, processed_files: int) -> bool:
     if total_files == 0 or processed_files == 0:
         return False
 
-    # batch_amount = 30 <= 25% of total_files <= 150 
+    # batch_amount = 30 <= 25% of total_files <= 150
     batch_amount = min(max(25, total_files // 4), 150)
 
     # Check if the number of processed files is a multiple of the batch amount
     # OR if all files have been processed
-    should_update = (processed_files > 0 and processed_files % batch_amount == 0) or processed_files == total_files
+    should_update = (
+        processed_files > 0 and processed_files % batch_amount == 0
+    ) or processed_files == total_files
     return should_update
