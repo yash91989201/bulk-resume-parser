@@ -23,8 +23,7 @@ ENV SKIP_ENV_VALIDATION=true
 RUN bun run build
 
 # Stage 2: Production Stage
-# FROM node:24-alpine3.21  AS runner
-FROM oven/bun:1.2.17-debian AS runner
+FROM node:24-alpine3.21  AS runner
 
 WORKDIR /app
 
@@ -34,4 +33,4 @@ COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
 
-CMD ["bun","run","server.js"]
+CMD ["node","server.js"]
