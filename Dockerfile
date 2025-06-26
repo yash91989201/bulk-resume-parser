@@ -1,5 +1,5 @@
 # Stage 1: Build Stage
-FROM oven/bun:1.2.17-distroless AS builder
+FROM oven/bun:1.2.17-alpine AS builder
 
 WORKDIR /app
 
