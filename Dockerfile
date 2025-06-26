@@ -1,5 +1,5 @@
 # Stage 1: Build Stage
-FROM oven/bun:1.2.17 AS builder
+FROM oven/bun:1.2.17-distroless AS builder
 
 WORKDIR /app
 
@@ -34,4 +34,4 @@ COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
 
-CMD ["bun","server.js"]
+CMD ["bun","run","server.js"]
