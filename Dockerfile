@@ -24,7 +24,7 @@ RUN bun run build
 
 # Stage 2: Production Stage
 # FROM node:24-alpine3.21  AS runner
-FROM oven/bun:1.2.17 AS runner
+FROM oven/bun:1.2.17-debian AS runner
 
 WORKDIR /app
 
