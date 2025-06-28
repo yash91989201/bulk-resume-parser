@@ -3,7 +3,8 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install drizzle-kit CLI globally
-RUN npm install -g drizzle-kit
+RUN npm install -g drizzle-kit@latest
+RUN npm install -g drizzle-orm@latest
 
 # Copy your drizzle.config.ts (or create it via env) to specify DB credentials
 # (See below for database connection)
