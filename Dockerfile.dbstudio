@@ -1,0 +1,17 @@
+# Dockerfile: custom Drizzle Studio (development version)
+FROM node:18-alpine
+WORKDIR /app
+
+# Install drizzle-kit CLI globally
+RUN npm install -g drizzle-kit
+
+# Copy your drizzle.config.ts (or create it via env) to specify DB credentials
+# (See below for database connection)
+COPY drizzle.config.ts ./
+
+# Expose the Drizzle Studio port
+EXPOSE 4983
+
+# Run the studio, binding to all interfaces
+CMD ["drizzle-kit", "studio", "--host", "0.0.0.0"]
+
