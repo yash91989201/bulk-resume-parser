@@ -6,7 +6,12 @@ import {
 } from "drizzle-zod";
 // DB TABLES
 import { parsingTaskTable, parseableFileTable } from "@/server/db/schema";
-import { ACCEPTED_FILE_TYPES, ACCEPTED_ARCHIVE_TYPES } from "@/constants";
+import {
+  ACCEPTED_FILE_TYPES,
+  ACCEPTED_ARCHIVE_TYPES,
+  TASK_FILE_UPLOAD_SIZE,
+} from "@/constants";
+import { formatFileSize } from "./utils";
 
 // DB TABLES SCHEMAS
 export const ParsingTaskSchema = createSelectSchema(parsingTaskTable);
@@ -52,8 +57,10 @@ export const StartParsingInput = z.object({
 
 export const ParsingTaskFormSchema = z.object({
   taskName: z.string().min(6, { error: "Min. 6 chars" }),
-  extractionConfigId: z.cuid2(),
-  taskFilesState: z
+  extractionConfigId: z.cuid2({
+    error: "Select Extraction Config",
+  }),
+  taskFiles: z
     .array(
       z.object({
         file: z.instanceof(File),
@@ -77,7 +84,16 @@ export const ParsingTaskFormSchema = z.object({
       );
 
       return allNonArchiveFiles || allArchiveFiles;
-    }, "Files must be either a list of images, PDFs, Word documents, or a list of archive files (but not a mix of both)."),
+    }, "Files must be either a list of images, PDFs, Word documents, or a list of archive files (but not a mix of both).")
+    .refine(
+      (files) => {
+        return (
+          files.reduce((acc, { file }) => acc + file.size, 0) <
+          TASK_FILE_UPLOAD_SIZE
+        );
+      },
+      `Files size cannot exceed ${formatFileSize(TASK_FILE_UPLOAD_SIZE)}`,
+    ),
 });
 
 // OTHER SCHEMAS
@@ -107,7 +123,7 @@ export const GetTaskFileUploadUrlOutput = z.object({
 export const CreateParsingTaskInput = z.object({
   taskName: z.string(),
   totalFiles: z.number().optional(),
-  extractionConfigId: z.string(),
+  extractionConfigId: z.cuid2({ error: "Extraction Config Required" }),
 });
 
 // AUTH SCHEMAS

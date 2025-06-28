@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -31,24 +32,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/select";
-import { Button, buttonVariants } from "@/ui/button";
 import { Input } from "@/ui/input";
-import { Badge } from "@/ui/badge";
+import { Button, buttonVariants } from "@/ui/button";
 // CUSTOM COMPONENTS
 import { MultiFileDropzone } from "@/components/multi-file-dropzone";
 // TYPES
 import type { SubmitHandler } from "react-hook-form";
 import type { ParsingTaskFormType } from "@/lib/types";
 // CONSTANTS
-import { ACCEPTED_ARCHIVE_TYPES, MAX_FILE_SIZE_S3_ENDPOINT } from "@/constants";
+import { ACCEPTED_ARCHIVE_TYPES, TASK_FILE_UPLOAD_SIZE } from "@/constants";
 import { Skeleton } from "@/ui/skeleton";
-import Link from "next/link";
 import {
   FileText,
   Settings,
   Upload,
-  CheckCircle,
-  AlertCircle,
   Zap,
   Clock,
   HardDrive,
@@ -81,20 +78,21 @@ export const ParsingTaskForm = () => {
     defaultValues: {
       taskName: "",
       extractionConfigId: "",
-      taskFilesState: [],
+      taskFiles: [],
     },
   });
 
   const { control, formState, handleSubmit, setValue, watch, reset } =
     parsingTaskForm;
 
-  const taskFilesState = watch("taskFilesState");
+  const taskFiles = watch("taskFiles");
+  const taskFilesSize = taskFiles.reduce((acc, { file }) => acc + file.size, 0);
 
   const onSubmit: SubmitHandler<ParsingTaskFormType> = async (formData) => {
     try {
-      const { taskName, taskFilesState, extractionConfigId } = formData;
+      const { taskName, taskFiles: taskFiles, extractionConfigId } = formData;
 
-      const filesMetadata = taskFilesState.map(({ file }) => ({
+      const filesMetadata = taskFiles.map(({ file }) => ({
         originalName: file.name,
         contentType: file.type,
         size: file.size,
@@ -106,7 +104,7 @@ export const ParsingTaskForm = () => {
 
       const createParsingTaskRes = await createParsingTask({
         taskName,
-        totalFiles: allArchiveFiles ? undefined : taskFilesState.length,
+        totalFiles: allArchiveFiles ? undefined : taskFiles.length,
         extractionConfigId,
       });
 
@@ -133,11 +131,11 @@ export const ParsingTaskForm = () => {
 
       await uploadTaskFiles({
         bucketFilesInfo: bucketFilesInfo,
-        files: taskFilesState.map((file) => file.file),
+        files: taskFiles.map((file) => file.file),
         progressCallback: (fileIndex, progress, estimatedTimeRemaining) => {
-          setValue(`taskFilesState.${fileIndex}.progress`, progress);
+          setValue(`taskFiles.${fileIndex}.progress`, progress);
           setValue(
-            `taskFilesState.${fileIndex}.estimatedTimeRemaining`,
+            `taskFiles.${fileIndex}.estimatedTimeRemaining`,
             estimatedTimeRemaining,
           );
         },
@@ -167,13 +165,6 @@ export const ParsingTaskForm = () => {
     }
   };
 
-  const totalFileSize = taskFilesState.reduce(
-    (acc, { file }) => acc + file.size,
-    0,
-  );
-  const isOverSizeLimit =
-    totalFileSize > MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024;
-
   return (
     <div className="mx-auto w-full max-w-4xl space-y-8">
       {/* Header Section */}
@@ -191,10 +182,10 @@ export const ParsingTaskForm = () => {
       </div>
 
       <Form {...parsingTaskForm}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           {/* Configuration Section */}
           <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg dark:from-gray-900 dark:to-gray-800">
-            <CardHeader className="pb-6">
+            <CardHeader>
               <div className="flex items-center space-x-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
                   <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -279,11 +270,7 @@ export const ParsingTaskForm = () => {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
 
-          <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg dark:from-gray-900 dark:to-gray-800">
-            <CardHeader className="pb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900">
@@ -296,23 +283,16 @@ export const ParsingTaskForm = () => {
                     </CardDescription>
                   </div>
                 </div>
-                {taskFilesState.length > 0 && (
-                  <Badge variant="secondary" className="text-sm">
-                    {taskFilesState.length} file
-                    {taskFilesState.length !== 1 ? "s" : ""} selected
-                  </Badge>
-                )}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
+
               <FormField
                 control={control}
-                name="taskFilesState"
+                name="taskFiles"
                 render={() => (
                   <FormItem>
                     <FormControl>
                       <MultiFileDropzone
-                        value={taskFilesState.map(
+                        value={taskFiles.map(
                           ({ file, progress, estimatedTimeRemaining }) => ({
                             file,
                             key: file.name,
@@ -322,7 +302,7 @@ export const ParsingTaskForm = () => {
                         )}
                         onChange={(fileStates) => {
                           setValue(
-                            "taskFilesState",
+                            "taskFiles",
                             fileStates.map(
                               ({ file, progress, estimatedTimeRemaining }) => ({
                                 file,
@@ -333,7 +313,7 @@ export const ParsingTaskForm = () => {
                           );
                         }}
                         dropzoneOptions={{
-                          maxSize: MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024,
+                          maxSize: TASK_FILE_UPLOAD_SIZE,
                           multiple: true,
                         }}
                       />
@@ -344,14 +324,14 @@ export const ParsingTaskForm = () => {
               />
 
               {/* File Statistics */}
-              {taskFilesState.length > 0 && (
+              {taskFiles.length > 0 && (
                 <div className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-3">
                   <div className="flex items-center space-x-3 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
                     <HardDrive className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     <div>
                       <p className="text-sm font-medium">Total Size</p>
                       <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                        {formatFileSize(totalFileSize)}
+                        {formatFileSize(taskFilesSize)}
                       </p>
                     </div>
                   </div>
@@ -360,7 +340,7 @@ export const ParsingTaskForm = () => {
                     <div>
                       <p className="text-sm font-medium">Files Count</p>
                       <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                        {taskFilesState.length}
+                        {taskFiles.length}
                       </p>
                     </div>
                   </div>
@@ -369,70 +349,30 @@ export const ParsingTaskForm = () => {
                     <div>
                       <p className="text-sm font-medium">Size Limit</p>
                       <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                        {formatFileSize(
-                          MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024,
-                        )}
+                        {formatFileSize(TASK_FILE_UPLOAD_SIZE)}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
-
-              {/* Size Warning */}
-              {isOverSizeLimit && (
-                <div className="flex items-center space-x-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  <div>
-                    <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                      File size limit exceeded
-                    </p>
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                      Please reduce the total file size to under{" "}
-                      {formatFileSize(MAX_FILE_SIZE_S3_ENDPOINT * 1024 * 1024)}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Submit Section */}
-          <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg dark:from-gray-900 dark:to-gray-800">
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  <div>
-                    <p className="font-medium">Ready to start parsing</p>
-                    <p className="text-muted-foreground text-sm">
-                      Your files will be processed using the selected
-                      configuration
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="submit"
-                  disabled={
-                    formState.isSubmitting ||
-                    isOverSizeLimit ||
-                    taskFilesState.length === 0
-                  }
-                  className="h-12 w-full px-8 text-base font-medium sm:w-auto"
-                  size="lg"
-                >
-                  {formState.isSubmitting ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="mr-2 h-4 w-4" />
-                      Start Parsing
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                disabled={formState.isValid || formState.isSubmitting}
+                className="h-12 w-full px-8 text-base font-medium sm:w-auto"
+                size="lg"
+              >
+                {formState.isSubmitting ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Start Parsing
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </form>

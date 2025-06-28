@@ -8,9 +8,14 @@ volumes:
 services:
   rabbitmq:
     image: rabbitmq:management
+    container_name: rabbitmq
+    networks:
+      - bulk-resume-parser
     ports:
       - "5672:5672"
       - "15672:15672"
+    env_file:
+      - .env
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
@@ -20,7 +25,10 @@ services:
 
   redis:
     image: redis:latest
+    container_name: redis
     restart: always
+    networks:
+      - bulk-resume-parser
     ports:
       - "6379:6379"
     healthcheck:
@@ -34,9 +42,14 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: minio
+    networks:
+      - bulk-resume-parser
     ports:
       - "9000:9000"
       - "9001:9001"
+    env_file:
+      - .env
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
@@ -45,76 +58,114 @@ services:
     build:
       context: ./services/extract-archive
     image: yash6370/extract-archive-service:latest
+    container_name: extract-archive
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
   conversion-director:
     build:
       context: ./services/conversion-director
     image: yash6370/conversion-director:latest
+    container_name: conversion-director
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
   word-to-txt:
     build:
       context: ./services/word-to-txt
     image: yash6370/word-to-txt-service:latest
+    container_name: word-to-txt
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
   pdf-to-txt:
     build:
       context: ./services/pdf-to-txt
     image: yash6370/pdf-to-txt-service:latest
+    container_name: pdf-to-txt
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
   img-to-txt:
     build:
       context: ./services/img-to-txt
     image: yash6370/img-to-txt-service:latest
+    container_name: img-to-txt
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
   txt-to-json:
     build:
       context: ./services/txt-to-json
     image: yash6370/txt-to-json-service:latest
+    container_name: txt-to-json
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
   aggregate-json:
     build:
       context: ./services/aggregate-json
     image: yash6370/aggregate-json-service:latest
+    container_name: aggregate_json
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
   json-to-sheet:
     build:
       context: ./services/json-to-sheet
     image: yash6370/json-to-sheet-service:latest
+    container_name: json-to-sheet
+    networks:
+      - bulk-resume-parser
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -122,6 +173,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    env_file:
+      - .env
 
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -132,6 +185,9 @@ services:
 
   unoserver:
     image: ghcr.io/unoconv/unoserver-docker
+    container_name: unoserver
+    networks:
+      - bulk-resume-parser
     ports:
       - "2003:2003"
     restart: unless-stopped
@@ -139,19 +195,27 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
-      args:
-        - S3_ENDPOINT=${S3_ENDPOINT}
-        - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-        - NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
-    image: yash6370/bulk-resume-parser:latest
+      dockerfile: Dockerfile.dev
+    container_name: app
+    networks:
+      - bulk-resume-parser
     ports:
       - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
 
   app-db:
     image: mysql:latest
+    container_name: app-db
+    networks:
+      - bulk-resume-parser
     ports:
       - "${DB_PORT}:${DB_PORT}"
+    env_file:
+      - .env
     volumes:
       - app-db-data:/var/lib/mysql
     environment:
@@ -175,7 +239,16 @@ services:
       context: .
       dockerfile: db-migrator.Dockerfile
     image: yash6370/app-db-migrator:latest
+    container_name: app-db-migrator
+    networks:
+      - bulk-resume-parser
+    env_file:
+      - .env
     depends_on:
       app-db:
         condition: service_healthy
     restart: on-failure
+
+networks:
+  bulk-resume-parser:
+    name: bulk-resume-parser
