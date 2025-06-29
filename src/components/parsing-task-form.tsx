@@ -6,6 +6,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 // UTILS
 import { uploadTaskFiles, formatFileSize } from "@/lib/utils";
+import { ParsingTaskError } from "@/lib/errors";
 import { useTRPC } from "@/trpc/react";
 // SCHEMAS
 import { ParsingTaskFormSchema } from "@/lib/schema";
@@ -65,6 +66,10 @@ export const ParsingTaskForm = () => {
     api.parsingTask.startParsing.mutationOptions(),
   );
 
+  const { mutateAsync: deleteParsingTask } = useMutation(
+    api.parsingTask.delete.mutationOptions(),
+  );
+
   const { mutateAsync: createParseableFiles } = useMutation(
     api.parseableFiles.create.mutationOptions(),
   );
@@ -109,7 +114,7 @@ export const ParsingTaskForm = () => {
       });
 
       if (createParsingTaskRes.status === "FAILED") {
-        throw new Error(createParsingTaskRes.message);
+        throw new ParsingTaskError(createParsingTaskRes.message);
       }
 
       const taskId = createParsingTaskRes.data.taskId;
@@ -121,12 +126,12 @@ export const ParsingTaskForm = () => {
       });
 
       if (status === "FAILED") {
-        throw new Error(message);
+        throw new ParsingTaskError(message, true, taskId);
       }
 
       const bucketFilesInfo = data?.bucketFilesInfo;
       if (bucketFilesInfo === undefined) {
-        throw new Error("bucketFilesInfo not found");
+        throw new ParsingTaskError("bucketFilesInfo not found", true, taskId);
       }
 
       await uploadTaskFiles({
@@ -157,8 +162,21 @@ export const ParsingTaskForm = () => {
 
       toast.message(startParsingRes.message);
     } catch (error) {
-      if (error instanceof Error) {
+      if (error instanceof ParsingTaskError) {
         toast.message(error.message);
+        if (error.abort && error.taskId) {
+          const deleteParsingTaskRes = await deleteParsingTask({
+            taskId: error.taskId,
+          });
+
+          if (deleteParsingTaskRes.status === "SUCCESS") {
+            toast.message("Aborting parsing task");
+          }
+        }
+      } else if (error instanceof Error) {
+        toast.message(error.message);
+      } else {
+        toast.message("An unknown error occurred.");
       }
     } finally {
       reset();
