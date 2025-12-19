@@ -28,13 +28,7 @@ export const env = createEnv({
       .optional(),
     S3_ACCESS_KEY: z.string(),
     S3_SECRET_KEY: z.string(),
-    S3_USE_SSL: z
-      .string()
-      .refine((val) => ["true", "false"].includes(val.toLowerCase()), {
-        message: "S3_USE_SSL must be either 'true' or 'false'",
-      })
-      .transform((val) => val.toLowerCase() === "true")
-      .optional(),
+    S3_USE_SSL: z.boolean(),
     RABBITMQ_URL: z.url(),
   },
   runtimeEnv: {
