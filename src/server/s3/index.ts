@@ -16,7 +16,7 @@ const s3Client =
     port: env.S3_PORT,
     accessKey: env.S3_ACCESS_KEY,
     secretKey: env.S3_SECRET_KEY,
-    useSSL: env.S3_USE_SSL,
+    useSSL: true,
     region: "us-east-1",
   });
 
