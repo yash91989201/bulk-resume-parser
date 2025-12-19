@@ -55,7 +55,7 @@ export class S3Service implements S3ServiceInterface {
 
   constructor(
     s3Client: Minio.Client,
-    uploadUrlExpiry = 3600,
+    uploadUrlExpiry = 7200, // 2 hours for large file uploads
     downloadUrlExpiry = 3600,
   ) {
     this.s3Client = s3Client;
