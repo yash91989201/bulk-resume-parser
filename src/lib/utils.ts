@@ -73,7 +73,9 @@ export const uploadToBucket = ({
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", presignedUrl, true);
     xhr.setRequestHeader("Content-Type", file.type);
-    xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+    
+    // Set timeout to 2 hours for large file uploads
+    xhr.timeout = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
     let startTime: number | null = null;
     let loadedPrevious = 0;
@@ -125,6 +127,10 @@ export const uploadToBucket = ({
 
     xhr.onerror = () => {
       reject(new Error("Upload failed due to a network error"));
+    };
+    
+    xhr.ontimeout = () => {
+      reject(new Error("Upload failed due to timeout. Please try again or use a faster connection."));
     };
 
     xhr.send(file);

@@ -146,7 +146,7 @@ export const QUEUES = {
   CONVERSION_DIRECTOR: "conversion_director_queue",
 } as const;
 
-// 1GB
+// 2GB
 export const TASK_FILE_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024;
 
 export const ACCEPTED_FILE_TYPES = [
