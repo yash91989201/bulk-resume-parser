@@ -28,7 +28,7 @@ logger = logging.getLogger("rabbitmq_consumer")
 
 mimetypes.init()
 
-SUPPORTED_FILES_EXT = [".doc",".docx",".pdf",".jpg",".jpeg",".png",".webp"]
+SUPPORTED_FILES_EXT = [".doc",".docx",".pdf",".jpg",".jpeg",".png",".webp",".rtf",".txt"]
 
 cuid2_generator: Callable[[], str] = cuid_wrapper()
 
@@ -289,7 +289,7 @@ def task_files_count(archive_files_path:List[str])-> tuple[int, int]:
     Returns:
         dict: A dictionary with 'total_files' and 'invalid_files' count.
     """
-    valid_extensions = {".doc", ".docx", ".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+    valid_extensions = {".doc", ".docx", ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".rtf", ".txt"}
     
     # Get the list of top-level files
     top_level_files = list_archive_files(archive_files_path)
@@ -426,6 +426,10 @@ def get_minio_folder(file_extension):
         return "word-document"
     elif file_extension == ".pdf":
         return "pdf"
+    elif file_extension == ".rtf":
+        return "rtf"
+    elif file_extension == ".txt":
+        return "txt"
     elif file_extension in [".jpg", ".jpeg", ".png", ".webp"]:
         return "image"
     else:

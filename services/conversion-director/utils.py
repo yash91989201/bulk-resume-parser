@@ -134,6 +134,10 @@ def get_queue_name_by_file_path(file_path: str) -> str:
         return QUEUES.WORD_TO_TXT
     elif file_extension == ".pdf":
         return QUEUES.PDF_TO_TXT
+    elif file_extension == ".rtf":
+        return QUEUES.RTF_TO_TXT
+    elif file_extension == ".txt":
+        return QUEUES.TXT_PASSTHROUGH
     elif file_extension in [".jpg", ".jpeg", ".png", ".webp"]:
         return QUEUES.IMG_TO_TXT
     return ""
