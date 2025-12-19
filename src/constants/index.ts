@@ -147,7 +147,7 @@ export const QUEUES = {
 } as const;
 
 // 1GB
-export const TASK_FILE_UPLOAD_SIZE = 1024 * 1024 * 1024;
+export const TASK_FILE_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024;
 
 export const ACCEPTED_FILE_TYPES = [
   "image/png",
