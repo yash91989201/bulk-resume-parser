@@ -11,6 +11,7 @@ import aiofiles
 from config import MINIO_CONFIG, MINIO_BUCKETS, SERVICE_CONFIG
 from dataclasses import dataclass
 from enum import Enum
+import ssl
 
 # Logging Configuration
 logging.basicConfig(
@@ -194,14 +195,16 @@ async def cleanup_files(file_paths: List[str]):
 
 
 async def send_message_to_queue(queue_name: str, message: Dict):
-    """
-    Sends a message to the specified RabbitMQ queue.
+    # Create SSL context like rejectUnauthorized: false
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
 
-    Args:
-        queue_name: The RabbitMQ queue name.
-        message: The message to send.
-    """
-    connection = await aio_pika.connect_robust(SERVICE_CONFIG.RABBITMQ_URL)
+    connection = await aio_pika.connect_robust(
+        SERVICE_CONFIG.RABBITMQ_URL,
+        ssl=ssl_context,   # 👈 equivalent to rejectUnauthorized: false
+    )
+
     async with connection:
         channel = await connection.channel()
         await channel.default_exchange.publish(
@@ -211,7 +214,6 @@ async def send_message_to_queue(queue_name: str, message: Dict):
             ),
             routing_key=queue_name,
         )
-        logger.debug(f"Message sent to {queue_name}: {message}")
 
 
 def should_update_processed_file_count(total_files: int, processed_files: int) -> bool:
