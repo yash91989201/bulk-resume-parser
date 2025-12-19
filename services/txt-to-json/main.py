@@ -51,15 +51,48 @@ async def process_message(message: AbstractIncomingMessage):
         )
         await download_file(MINIO_BUCKETS.PROCESSED_TXT_FILES, file_path, local_path)
 
-        # Process content
-        with open(local_path, "r") as f:
-            content = f.read()
+        # Process content - try multiple encodings
+        content = None
+        encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
+        
+        for encoding in encodings:
+            try:
+                with open(local_path, "r", encoding=encoding) as f:
+                    content = f.read()
+                logger.info(f"Successfully read file with {encoding} encoding")
+                break
+            except (UnicodeDecodeError, LookupError):
+                continue
+        
+        # If all encodings fail, try reading with errors='ignore'
+        if content is None:
+            try:
+                logger.warning(f"Failed to decode with common encodings, trying errors='ignore'")
+                with open(local_path, "r", encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+            except Exception as e:
+                logger.error(f"Failed to read file completely: {str(e)}")
+                content = ""
 
         task_prompt = await get_task_prompt(task_id)
 
-        extracted_data = await resume_data_extractor.extract_resume_data(
-            task_prompt, content
-        )
+        # If content is empty or whitespace, use default data
+        if not content or not content.strip():
+            logger.warning(f"Empty or unreadable content for task {task_id}, using default data")
+            extracted_data = {
+                "full_name": None,
+                "email": None,
+                "phone_number": None,
+                "country_code": None,
+                "invalid_number": None,
+                "designation": None,
+                "department": None,
+                "functional_area": None,
+            }
+        else:
+            extracted_data = await resume_data_extractor.extract_resume_data(
+                task_prompt, content
+            )
 
         logger.info(f"extract_data {extracted_data}")
 

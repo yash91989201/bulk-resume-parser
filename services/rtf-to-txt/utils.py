@@ -71,12 +71,28 @@ async def extract_text_from_rtf(file_path: str) -> str:
         The extracted text content.
     """
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as rtf_file:
-            rtf_content = rtf_file.read()
+        # Try reading with different encodings
+        encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+        rtf_content = None
+        
+        for encoding in encodings:
+            try:
+                with open(file_path, "r", encoding=encoding) as rtf_file:
+                    rtf_content = rtf_file.read()
+                logger.info(f"Successfully read RTF file with {encoding} encoding")
+                break
+            except (UnicodeDecodeError, LookupError):
+                continue
+        
+        # If all encodings fail, use errors='ignore' as fallback
+        if rtf_content is None:
+            logger.warning(f"Failed to decode RTF with common encodings, using errors='ignore'")
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as rtf_file:
+                rtf_content = rtf_file.read()
 
         # Use striprtf to extract text
         text_content = rtf_to_text(rtf_content)
-        return text_content
+        return text_content if text_content else ""
     except Exception as e:
         logger.error(f"Error extracting text from RTF file {file_path}: {e}")
         return ""
