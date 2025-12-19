@@ -16,7 +16,7 @@ export const publishToQueue = async ({
 }): Promise<boolean> => {
   try {
     // Connect to RabbitMQ
-    const connection = await amqp.connect(env.RABBITMQ_URL);
+    const connection = await amqp.connect(env.RABBITMQ_URL, { tls: { rejectUnauthorized: false, }, });
     const channel = await connection.createChannel();
 
     // Assert the queue
