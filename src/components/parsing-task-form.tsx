@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 // UTILS
-import { uploadTaskFiles, formatFileSize } from "@/lib/utils";
+import { uploadTaskFiles, formatFileSize, uploadFileMultipart } from "@/lib/utils";
 import { ParsingTaskError } from "@/lib/errors";
 import { useTRPC } from "@/trpc/react";
 // SCHEMAS
@@ -134,17 +134,49 @@ export const ParsingTaskForm = () => {
         throw new ParsingTaskError("bucketFilesInfo not found", true, taskId);
       }
 
-      await uploadTaskFiles({
-        bucketFilesInfo: bucketFilesInfo,
-        files: taskFiles.map((file) => file.file),
-        progressCallback: (fileIndex, progress, estimatedTimeRemaining) => {
-          setValue(`taskFiles.${fileIndex}.progress`, progress);
-          setValue(
-            `taskFiles.${fileIndex}.estimatedTimeRemaining`,
-            estimatedTimeRemaining,
-          );
-        },
+      // Upload files - use multipart for files > 100MB
+      const MULTIPART_THRESHOLD = 100 * 1024 * 1024; // 100MB
+      
+      const uploadPromises = bucketFilesInfo.map((bucketFileInfo, index) => {
+        const file = taskFiles.find(
+          (f) => f.file.name === bucketFileInfo.originalName && f.file.size === bucketFileInfo.size
+        );
+
+        if (!file) {
+          throw new Error("File not found");
+        }
+
+        const progressCallback = (progress: number, estimatedTimeRemaining?: number) => {
+          setValue(`taskFiles.${index}.progress`, progress);
+          setValue(`taskFiles.${index}.estimatedTimeRemaining`, estimatedTimeRemaining);
+        };
+
+        // Use multipart upload for large files
+        if (file.file.size > MULTIPART_THRESHOLD) {
+          return uploadFileMultipart({
+            file: file.file,
+            bucketFileInfo,
+            progressCallback,
+            api,
+          });
+        } else {
+          // Use regular upload for smaller files
+          return fetch(bucketFileInfo.presignedUrl, {
+            method: 'PUT',
+            body: file.file,
+            headers: {
+              'Content-Type': file.file.type,
+            },
+          }).then(res => {
+            if (!res.ok) {
+              throw new Error(`Upload failed with status ${res.status}`);
+            }
+            progressCallback(100);
+          });
+        }
       });
+
+      await Promise.all(uploadPromises);
 
       if (!allArchiveFiles) {
         await createParseableFiles({

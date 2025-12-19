@@ -182,3 +182,133 @@ export const uploadTaskFiles = async ({
     throw new Error("Some uploads failed, please try again");
   }
 };
+
+// Multipart upload constants
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
+const MULTIPART_THRESHOLD = 100 * 1024 * 1024; // Use multipart for files > 100MB
+
+/**
+ * Uploads a file chunk to S3 using presigned URL
+ */
+const uploadChunk = async (
+  chunk: Blob,
+  presignedUrl: string,
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", presignedUrl, true);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const etag = xhr.getResponseHeader("ETag");
+        if (!etag) {
+          reject(new Error("No ETag received from server"));
+          return;
+        }
+        resolve(etag.replace(/"/g, ""));
+      } else {
+        reject(new Error(`Chunk upload failed with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Chunk upload failed due to network error"));
+    };
+
+    xhr.send(chunk);
+  });
+};
+
+/**
+ * Uploads file using multipart upload for better reliability with large files
+ */
+export const uploadFileMultipart = async ({
+  file,
+  bucketFileInfo,
+  progressCallback,
+  api,
+}: {
+  file: File;
+  bucketFileInfo: BucketFileInfoType;
+  progressCallback: (progress: number, estimatedTimeRemaining?: number) => void;
+  api: any;
+}): Promise<void> => {
+  const { bucketName, filePath, contentType } = bucketFileInfo;
+  
+  // Initiate multipart upload
+  const initiateRes = await api.presignedUrl.initiateMultipartUpload.mutate({
+    bucketName,
+    fileName: filePath,
+    filePath,
+    contentType,
+  });
+
+  if (initiateRes.status === "FAILED") {
+    throw new Error(initiateRes.message);
+  }
+
+  const uploadId = initiateRes.data.uploadId;
+  
+  try {
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    const parts: Array<{ partNumber: number; etag: string }> = [];
+    
+    let uploadedBytes = 0;
+    const startTime = Date.now();
+
+    for (let partNumber = 1; partNumber <= totalChunks; partNumber++) {
+      const start = (partNumber - 1) * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+
+      // Get presigned URL for this part
+      const urlRes = await api.presignedUrl.getMultipartUploadUrl.mutate({
+        bucketName,
+        fileName: filePath,
+        uploadId,
+        partNumber,
+        totalParts: totalChunks,
+      });
+
+      if (urlRes.status === "FAILED") {
+        throw new Error(urlRes.message);
+      }
+
+      // Upload the chunk
+      const etag = await uploadChunk(chunk, urlRes.data.presignedUrl);
+      parts.push({ partNumber, etag });
+
+      // Update progress
+      uploadedBytes += chunk.size;
+      const progress = (uploadedBytes / file.size) * 100;
+      
+      const timeElapsed = Date.now() - startTime;
+      const uploadSpeed = (uploadedBytes / timeElapsed) * 1000; // bytes per second
+      const bytesRemaining = file.size - uploadedBytes;
+      const estimatedTimeRemaining = uploadSpeed > 0 ? bytesRemaining / uploadSpeed : undefined;
+
+      progressCallback(progress, estimatedTimeRemaining);
+    }
+
+    // Complete multipart upload
+    const completeRes = await api.presignedUrl.completeMultipartUpload.mutate({
+      bucketName,
+      fileName: filePath,
+      uploadId,
+      parts,
+    });
+
+    if (completeRes.status === "FAILED") {
+      throw new Error(completeRes.message);
+    }
+  } catch (error) {
+    // Abort multipart upload on error
+    await api.presignedUrl.abortMultipartUpload.mutate({
+      bucketName,
+      fileName: filePath,
+      uploadId,
+    });
+    throw error;
+  }
+};

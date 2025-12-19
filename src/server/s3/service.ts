@@ -38,6 +38,30 @@ interface S3ServiceInterface {
     expiry?: number;
   }) => Promise<string>;
 
+  // Multipart upload methods
+  initiateMultipartUpload: (params: {
+    bucketName: S3BucketType;
+    fileName: string;
+  }) => Promise<string>;
+  createMultipartUploadUrl: (params: {
+    bucketName: S3BucketType;
+    fileName: string;
+    uploadId: string;
+    partNumber: number;
+    expiry?: number;
+  }) => Promise<string>;
+  completeMultipartUpload: (params: {
+    bucketName: S3BucketType;
+    fileName: string;
+    uploadId: string;
+    parts: Array<{ partNumber: number; etag: string }>;
+  }) => Promise<void>;
+  abortMultipartUpload: (params: {
+    bucketName: S3BucketType;
+    fileName: string;
+    uploadId: string;
+  }) => Promise<void>;
+
   deleteFile: (params: {
     bucketName: S3BucketType;
     fileName: string;
@@ -167,5 +191,69 @@ export class S3Service implements S3ServiceInterface {
   }): Promise<void> {
     const { bucketName, fileNames } = params;
     await this.s3Client.removeObjects(bucketName, fileNames);
+  }
+
+  async initiateMultipartUpload(params: {
+    bucketName: S3BucketType;
+    fileName: string;
+  }): Promise<string> {
+    const { bucketName, fileName } = params;
+    const uploadId = await this.s3Client.initiateNewMultipartUpload(
+      bucketName,
+      fileName,
+      {},
+    );
+    return uploadId;
+  }
+
+  async createMultipartUploadUrl(params: {
+    bucketName: S3BucketType;
+    fileName: string;
+    uploadId: string;
+    partNumber: number;
+    expiry?: number;
+  }): Promise<string> {
+    const {
+      bucketName,
+      fileName,
+      uploadId,
+      partNumber,
+      expiry = this.uploadUrlExpiry,
+    } = params;
+
+    return await this.s3Client.presignedUrl(
+      "PUT",
+      bucketName,
+      fileName,
+      expiry,
+      {
+        uploadId,
+        partNumber: partNumber.toString(),
+      },
+    );
+  }
+
+  async completeMultipartUpload(params: {
+    bucketName: S3BucketType;
+    fileName: string;
+    uploadId: string;
+    parts: Array<{ partNumber: number; etag: string }>;
+  }): Promise<void> {
+    const { bucketName, fileName, uploadId, parts } = params;
+    await this.s3Client.completeMultipartUpload(
+      bucketName,
+      fileName,
+      uploadId,
+      parts,
+    );
+  }
+
+  async abortMultipartUpload(params: {
+    bucketName: S3BucketType;
+    fileName: string;
+    uploadId: string;
+  }): Promise<void> {
+    const { bucketName, fileName, uploadId } = params;
+    await this.s3Client.abortMultipartUpload(bucketName, fileName, uploadId);
   }
 }

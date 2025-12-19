@@ -120,6 +120,40 @@ export const GetTaskFileUploadUrlOutput = z.object({
   bucketFilesInfo: z.array(BucketFileInfoSchema),
 });
 
+// Multipart upload schemas
+export const InitiateMultipartUploadInput = z.object({
+  bucketName: S3BucketSchema,
+  fileName: z.string(),
+  filePath: z.string(),
+  contentType: z.string(),
+});
+
+export const GetMultipartUploadUrlInput = z.object({
+  bucketName: S3BucketSchema,
+  fileName: z.string(),
+  uploadId: z.string(),
+  partNumber: z.number().min(1).max(10000),
+  totalParts: z.number().min(1).max(10000),
+});
+
+export const CompleteMultipartUploadInput = z.object({
+  bucketName: S3BucketSchema,
+  fileName: z.string(),
+  uploadId: z.string(),
+  parts: z.array(
+    z.object({
+      partNumber: z.number(),
+      etag: z.string(),
+    }),
+  ),
+});
+
+export const AbortMultipartUploadInput = z.object({
+  bucketName: S3BucketSchema,
+  fileName: z.string(),
+  uploadId: z.string(),
+});
+
 export const CreateParsingTaskInput = z.object({
   taskName: z.string(),
   totalFiles: z.number().optional(),
