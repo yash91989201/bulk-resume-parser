@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 // UTILS
-import { uploadTaskFiles, formatFileSize, uploadFileMultipart } from "@/lib/utils";
+import { formatFileSize, uploadFileMultipart } from "@/lib/utils";
 import { ParsingTaskError } from "@/lib/errors";
 import { useTRPC } from "@/trpc/react";
 // SCHEMAS
@@ -78,6 +78,22 @@ export const ParsingTaskForm = () => {
     api.presignedUrl.getTaskFileUploadUrl.mutationOptions(),
   );
 
+  const { mutateAsync: initiateMultipartUpload } = useMutation(
+    api.presignedUrl.initiateMultipartUpload.mutationOptions(),
+  );
+
+  const { mutateAsync: getMultipartUploadUrl } = useMutation(
+    api.presignedUrl.getMultipartUploadUrl.mutationOptions(),
+  );
+
+  const { mutateAsync: completeMultipartUpload } = useMutation(
+    api.presignedUrl.completeMultipartUpload.mutationOptions(),
+  );
+
+  const { mutateAsync: abortMultipartUpload } = useMutation(
+    api.presignedUrl.abortMultipartUpload.mutationOptions(),
+  );
+
   const parsingTaskForm = useForm<ParsingTaskFormType>({
     resolver: standardSchemaResolver(ParsingTaskFormSchema),
     defaultValues: {
@@ -136,19 +152,27 @@ export const ParsingTaskForm = () => {
 
       // Upload files - use multipart for files > 100MB
       const MULTIPART_THRESHOLD = 100 * 1024 * 1024; // 100MB
-      
+
       const uploadPromises = bucketFilesInfo.map((bucketFileInfo, index) => {
         const file = taskFiles.find(
-          (f) => f.file.name === bucketFileInfo.originalName && f.file.size === bucketFileInfo.size
+          (f) =>
+            f.file.name === bucketFileInfo.originalName &&
+            f.file.size === bucketFileInfo.size,
         );
 
         if (!file) {
           throw new Error("File not found");
         }
 
-        const progressCallback = (progress: number, estimatedTimeRemaining?: number) => {
+        const progressCallback = (
+          progress: number,
+          estimatedTimeRemaining?: number,
+        ) => {
           setValue(`taskFiles.${index}.progress`, progress);
-          setValue(`taskFiles.${index}.estimatedTimeRemaining`, estimatedTimeRemaining);
+          setValue(
+            `taskFiles.${index}.estimatedTimeRemaining`,
+            estimatedTimeRemaining,
+          );
         };
 
         // Use multipart upload for large files
@@ -157,17 +181,20 @@ export const ParsingTaskForm = () => {
             file: file.file,
             bucketFileInfo,
             progressCallback,
-            api,
+            initiateMultipartUpload,
+            getMultipartUploadUrl,
+            completeMultipartUpload,
+            abortMultipartUpload,
           });
         } else {
           // Use regular upload for smaller files
           return fetch(bucketFileInfo.presignedUrl, {
-            method: 'PUT',
+            method: "PUT",
             body: file.file,
             headers: {
-              'Content-Type': file.file.type,
+              "Content-Type": file.file.type,
             },
-          }).then(res => {
+          }).then((res) => {
             if (!res.ok) {
               throw new Error(`Upload failed with status ${res.status}`);
             }

@@ -227,17 +227,23 @@ export const uploadFileMultipart = async ({
   file,
   bucketFileInfo,
   progressCallback,
-  api,
+  initiateMultipartUpload,
+  getMultipartUploadUrl,
+  completeMultipartUpload,
+  abortMultipartUpload,
 }: {
   file: File;
   bucketFileInfo: BucketFileInfoType;
   progressCallback: (progress: number, estimatedTimeRemaining?: number) => void;
-  api: any;
+  initiateMultipartUpload: (input: any) => Promise<any>;
+  getMultipartUploadUrl: (input: any) => Promise<any>;
+  completeMultipartUpload: (input: any) => Promise<any>;
+  abortMultipartUpload: (input: any) => Promise<any>;
 }): Promise<void> => {
   const { bucketName, filePath, contentType } = bucketFileInfo;
   
   // Initiate multipart upload
-  const initiateRes = await api.presignedUrl.initiateMultipartUpload.mutate({
+  const initiateRes = await initiateMultipartUpload({
     bucketName,
     fileName: filePath,
     filePath,
@@ -263,7 +269,7 @@ export const uploadFileMultipart = async ({
       const chunk = file.slice(start, end);
 
       // Get presigned URL for this part
-      const urlRes = await api.presignedUrl.getMultipartUploadUrl.mutate({
+      const urlRes = await getMultipartUploadUrl({
         bucketName,
         fileName: filePath,
         uploadId,
@@ -292,7 +298,7 @@ export const uploadFileMultipart = async ({
     }
 
     // Complete multipart upload
-    const completeRes = await api.presignedUrl.completeMultipartUpload.mutate({
+    const completeRes = await completeMultipartUpload({
       bucketName,
       fileName: filePath,
       uploadId,
@@ -304,7 +310,7 @@ export const uploadFileMultipart = async ({
     }
   } catch (error) {
     // Abort multipart upload on error
-    await api.presignedUrl.abortMultipartUpload.mutate({
+    await abortMultipartUpload({
       bucketName,
       fileName: filePath,
       uploadId,
