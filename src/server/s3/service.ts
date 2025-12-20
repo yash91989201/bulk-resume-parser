@@ -240,11 +240,18 @@ export class S3Service implements S3ServiceInterface {
     parts: Array<{ partNumber: number; etag: string }>;
   }): Promise<void> {
     const { bucketName, fileName, uploadId, parts } = params;
+    
+    // MinIO expects parts with 'part' not 'partNumber'
+    const formattedParts = parts.map(({ partNumber, etag }) => ({
+      part: partNumber,
+      etag: etag,
+    }));
+    
     await this.s3Client.completeMultipartUpload(
       bucketName,
       fileName,
       uploadId,
-      parts,
+      formattedParts,
     );
   }
 
