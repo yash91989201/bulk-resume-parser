@@ -15,10 +15,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 
 # Leverage Docker cache by first copying lockfiles
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml ./
 
 # Install dependencies into .venv using uv
-RUN uv sync --locked
+RUN uv sync
 
 # Copy application code
 COPY . .
