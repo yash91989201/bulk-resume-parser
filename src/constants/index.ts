@@ -144,6 +144,7 @@ export const QUEUES = {
   PDF_TO_TXT: "pdf_to_txt_queue",
   TXT_TO_JSON: "txt_to_json_queue",
   CONVERSION_DIRECTOR: "conversion_director_queue",
+  RESUME_EXTRACTOR: "resume_extractor_queue",
 } as const;
 
 // 2GB

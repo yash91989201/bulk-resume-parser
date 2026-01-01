@@ -64,15 +64,12 @@ export const parsingTaskRouter = createTRPCRouter({
   startParsing: protectedProcedure
     .input(StartParsingInput)
     .mutation(async ({ ctx, input }) => {
-      const queueName = input.extractFromArchive
-        ? QUEUES.EXTRACT_ARCHIVE
-        : QUEUES.CONVERSION_DIRECTOR;
-
       const isSuccess = await publishToQueue({
-        queueName,
+        queueName: QUEUES.RESUME_EXTRACTOR,
         message: JSON.stringify({
           userId: ctx.session.user.id,
           taskId: input.taskId,
+          extractFromArchive: input.extractFromArchive,
         }),
       });
 
