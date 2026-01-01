@@ -61,9 +61,7 @@ class PDFConverter(TextConverter):
     async def convert(file_path: str) -> str:
         """Convert PDF to text asynchronously."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _thread_pool, PDFConverter._extract_text, file_path
-        )
+        return await loop.run_in_executor(_thread_pool, PDFConverter._extract_text, file_path)
 
 
 class WordConverter(TextConverter):
@@ -92,19 +90,13 @@ class WordConverter(TextConverter):
                 with z.open("word/document.xml") as f:
                     xml_content = f.read()
 
-            namespaces = {
-                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            }
+            namespaces = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
             tree = ET.fromstring(xml_content)
             paragraphs = tree.findall(".//w:p", namespaces)
 
             text_lines = []
             for para in paragraphs:
-                texts = [
-                    node.text
-                    for node in para.findall(".//w:t", namespaces)
-                    if node.text
-                ]
+                texts = [node.text for node in para.findall(".//w:t", namespaces) if node.text]
                 text_lines.append("".join(texts))
 
             return "\n".join(filter(None, text_lines))
@@ -114,32 +106,32 @@ class WordConverter(TextConverter):
 
     @staticmethod
     async def _convert_doc_to_docx(doc_path: str) -> Optional[str]:
-        """Convert .doc to .docx using unoconvert (LibreOffice)."""
-        docx_path = doc_path + "x"
+        """Convert .doc to .docx using local LibreOffice."""
+        output_dir = os.path.dirname(doc_path)
+        base_name = os.path.splitext(os.path.basename(doc_path))[0]
+        docx_path = os.path.join(output_dir, base_name + ".docx")
 
         try:
             process = await asyncio.create_subprocess_exec(
-                "unoconvert",
-                "--host",
-                ServiceConfig.UNOSERVER_HOST,
-                "--port",
-                ServiceConfig.UNOSERVER_PORT,
-                "--host-location",
-                "remote",
+                "soffice",
+                "--headless",
+                "--convert-to",
+                "docx",
+                "--outdir",
+                output_dir,
                 doc_path,
-                docx_path,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await process.communicate()
 
-            if process.returncode == 0:
+            if process.returncode == 0 and os.path.exists(docx_path):
                 logger.debug(f"Successfully converted {doc_path} to {docx_path}")
                 return docx_path
             else:
                 logger.error(
-                    f"unoconvert failed: stdout={stdout.decode()}, stderr={stderr.decode()}"
+                    f"soffice conversion failed: stdout={stdout.decode()}, stderr={stderr.decode()}"
                 )
                 return None
         except Exception as e:
@@ -246,9 +238,7 @@ class ImageConverter(TextConverter):
 
             # OCR with optimized config
             custom_config = r"--psm 6 --oem 3"
-            extracted_text = pytesseract.image_to_string(
-                processed, config=custom_config
-            )
+            extracted_text = pytesseract.image_to_string(processed, config=custom_config)
 
             return extracted_text.strip()
         except Exception as e:
@@ -259,9 +249,7 @@ class ImageConverter(TextConverter):
     async def convert(file_path: str) -> str:
         """Convert image to text using OCR asynchronously."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _thread_pool, ImageConverter._extract_text, file_path
-        )
+        return await loop.run_in_executor(_thread_pool, ImageConverter._extract_text, file_path)
 
 
 class RTFConverter(TextConverter):
@@ -285,9 +273,7 @@ class RTFConverter(TextConverter):
 
             # If all encodings fail, use errors='ignore' as fallback
             if rtf_content is None:
-                with open(
-                    file_path, "r", encoding="utf-8", errors="ignore"
-                ) as rtf_file:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as rtf_file:
                     rtf_content = rtf_file.read()
 
             # Use striprtf to extract text
@@ -301,9 +287,7 @@ class RTFConverter(TextConverter):
     async def convert(file_path: str) -> str:
         """Convert RTF to text asynchronously."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _thread_pool, RTFConverter._extract_text, file_path
-        )
+        return await loop.run_in_executor(_thread_pool, RTFConverter._extract_text, file_path)
 
 
 class TextPassthrough(TextConverter):
@@ -333,9 +317,7 @@ class TextPassthrough(TextConverter):
     async def convert(file_path: str) -> str:
         """Read text file asynchronously."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _thread_pool, TextPassthrough._read_text, file_path
-        )
+        return await loop.run_in_executor(_thread_pool, TextPassthrough._read_text, file_path)
 
 
 class FileConverter:
@@ -380,9 +362,7 @@ class FileConverter:
             return ""
 
     @classmethod
-    async def convert_batch(
-        cls, file_paths: list[str], concurrency: int = 50
-    ) -> dict[str, str]:
+    async def convert_batch(cls, file_paths: list[str], concurrency: int = 50) -> dict[str, str]:
         """
         Convert multiple files to text concurrently.
 

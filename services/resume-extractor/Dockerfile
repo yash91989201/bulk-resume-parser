@@ -12,24 +12,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  # For patoolib archive extraction
   unzip \
   p7zip-full \
   unrar-free \
-  # For Tesseract OCR (image-to-text)
   tesseract-ocr \
   tesseract-ocr-eng \
-  # For OpenCV
   libgl1 \
   libglib2.0-0 \
   libsm6 \
   libxext6 \
   libxrender-dev \
-  # For python-docx and other packages
   libxml2-dev \
   libxslt1-dev \
-  # For unoconvert (doc to docx conversion)
-  # Note: unoconvert connects to external unoserver container
+  libreoffice-writer-nogui \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
