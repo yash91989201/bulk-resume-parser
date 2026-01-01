@@ -78,11 +78,8 @@ class WordConverter(TextConverter):
         try:
             document = Document(file_path)
             return "\n".join([para.text for para in document.paragraphs if para.text])
-        except zipfile.BadZipFile:
+        except Exception:
             return WordConverter._extract_from_corrupted_docx(file_path)
-        except Exception as e:
-            logger.error(f"Error extracting text from DOCX {file_path}: {e}")
-            return ""
 
     @staticmethod
     def _extract_from_corrupted_docx(file_path: str) -> str:
