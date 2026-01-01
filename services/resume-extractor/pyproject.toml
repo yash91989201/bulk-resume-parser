@@ -6,58 +6,61 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
-    # RabbitMQ
-    "aio-pika>=9.4.0",
-    
-    # MinIO/S3
-    "minio>=7.2.0",
-    
-    # HTTP client
-    "aiohttp>=3.9.0",
-    
-    # Async file operations
-    "aiofiles>=23.2.0",
-    
-    # Fast JSON serialization
-    "orjson>=3.9.0",
-    
-    # Archive extraction
-    "patool>=2.0.0",
-    
-    # PDF text extraction
-    "PyPDF2>=3.0.0",
-    
-    # Word document text extraction
-    "python-docx>=1.1.0",
-    
-    # RTF text extraction
-    "striprtf>=0.0.26",
-    
-    # OCR for images
-    "pytesseract>=0.3.10",
-    "opencv-python-headless>=4.9.0",
-    "numpy>=1.26.0",
-    
-    # Gemini LLM
-    "google-genai>=1.0.0",
-    
-    # Excel generation
-    "pandas>=2.2.0",
-    "openpyxl>=3.1.0",
-    
-    # Environment variables
-    "python-dotenv>=1.0.0",
-    
-    # Unique ID generation
-    "cuid2>=2.0.0",
+  # RabbitMQ
+  "aio-pika>=9.4.0",
+
+  # MinIO/S3
+  "minio>=7.2.0",
+
+  # HTTP client
+  "aiohttp>=3.9.0",
+
+  # Async file operations
+  "aiofiles>=23.2.0",
+
+  # Fast JSON serialization
+  "orjson>=3.9.0",
+
+  # Archive extraction
+  "patool>=2.0.0",
+
+  # PDF text extraction
+  "PyPDF2>=3.0.0",
+
+  # Word document text extraction
+  "python-docx>=1.1.0",
+
+  # RTF text extraction
+  "striprtf>=0.0.26",
+
+  # OCR for images
+  "pytesseract>=0.3.10",
+  "opencv-python-headless>=4.9.0",
+  "numpy>=1.26.0",
+
+  # Gemini LLM
+  "google-genai>=1.0.0",
+
+  # Excel generation
+  "pandas>=2.2.0",
+  "openpyxl>=3.1.0",
+
+  # Environment variables
+  "python-dotenv>=1.0.0",
+
+  # Unique ID generation
+  "cuid2>=2.0.0",
+
+
+  "unoserver>=3.2",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "black>=24.0.0",
-    "ruff>=0.2.0",
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.0",
+  "black>=24.0.0",
+  "ruff>=0.2.0",
 ]
 
 [build-system]
