@@ -11,7 +11,28 @@ import { useTRPC } from "@/trpc/react";
 import { Progress } from "@/ui/progress";
 import { Button } from "@/ui/button";
 // ICONS
-import { Loader2 } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
+
+function formatDuration(startDate: Date, endDate: Date): string {
+  const diffMs = endDate.getTime() - startDate.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+
+  if (diffSeconds < 60) {
+    return `${diffSeconds}s`;
+  }
+
+  const minutes = Math.floor(diffSeconds / 60);
+  const seconds = diffSeconds % 60;
+
+  if (minutes < 60) {
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
 
 export const ParsingTaskCard = ({ task }: { task: ParsingTaskType }) => {
   const progressValue = Math.round(
@@ -76,9 +97,22 @@ export const ParsingTaskCard = ({ task }: { task: ParsingTaskType }) => {
           <span className="text-gray-600">
             {task.processedFiles}/{task.totalFiles} files
           </span>
-          {task.invalidFiles > 0 && (
-            <span className="text-red-600">{task.invalidFiles} errors</span>
-          )}
+          <div className="flex gap-3">
+            {task.taskStatus === "completed" &&
+              task.createdAt &&
+              task.updatedAt && (
+                <span className="flex items-center gap-1 text-gray-600">
+                  <Clock className="h-3 w-3" />
+                  {formatDuration(
+                    new Date(task.createdAt),
+                    new Date(task.updatedAt),
+                  )}
+                </span>
+              )}
+            {task.invalidFiles > 0 && (
+              <span className="text-red-600">{task.invalidFiles} errors</span>
+            )}
+          </div>
         </div>
 
         <Progress value={progressValue} className="h-2 bg-gray-200" />

@@ -294,19 +294,7 @@ class ResumeProcessor:
         # Combine results with original file info
         final_results = []
         for item in extraction_results:
-            file_id = item["id"]
-            data = item["data"]
-
-            # Add original filename to the data
-            original_name = ""
-            for rt in resume_texts:
-                if rt["id"] == file_id:
-                    original_name = rt["original_name"]
-                    break
-
-            # Include filename in the result
-            data["_source_file"] = original_name
-            final_results.append(data)
+            final_results.append(item["data"])
 
         return final_results
 
