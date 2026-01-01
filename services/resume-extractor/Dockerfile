@@ -51,9 +51,5 @@ RUN mkdir -p /tmp/resume-extractor/archives \
   /tmp/resume-extractor/processing \
   /tmp/resume-extractor/output
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD python -c "import socket; s=socket.socket(); s.connect(('localhost', 8080)); s.close()" || exit 1
-
 # Run the application
 CMD ["uv", "run", "python", "main.py"]
