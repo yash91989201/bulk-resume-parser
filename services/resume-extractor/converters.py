@@ -6,6 +6,8 @@ Consolidates: pdf-to-txt, word-to-txt, img-to-txt, rtf-to-txt, txt-passthrough
 import asyncio
 import logging
 import os
+import shutil
+import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
@@ -110,11 +112,17 @@ class WordConverter(TextConverter):
         output_dir = os.path.dirname(doc_path)
         base_name = os.path.splitext(os.path.basename(doc_path))[0]
         docx_path = os.path.join(output_dir, base_name + ".docx")
+        user_profile = f"/tmp/lo_profile_{uuid.uuid4().hex}"
+
+        env = os.environ.copy()
+        env["HOME"] = "/tmp"
 
         try:
             process = await asyncio.create_subprocess_exec(
                 "soffice",
                 "--headless",
+                "--nofirststartwizard",
+                f"-env:UserInstallation=file://{user_profile}",
                 "--convert-to",
                 "docx",
                 "--outdir",
@@ -122,16 +130,19 @@ class WordConverter(TextConverter):
                 doc_path,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=env,
             )
 
             stdout, stderr = await process.communicate()
 
-            if process.returncode == 0 and os.path.exists(docx_path):
+            shutil.rmtree(user_profile, ignore_errors=True)
+
+            if os.path.exists(docx_path):
                 logger.debug(f"Successfully converted {doc_path} to {docx_path}")
                 return docx_path
             else:
                 logger.error(
-                    f"soffice conversion failed: stdout={stdout.decode()}, stderr={stderr.decode()}"
+                    f"soffice conversion failed (rc={process.returncode}): {stderr.decode()}"
                 )
                 return None
         except Exception as e:
