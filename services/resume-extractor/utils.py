@@ -9,6 +9,7 @@ import logging
 import mimetypes
 import os
 import shutil
+import zipfile
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -305,6 +306,17 @@ async def delete_parseable_files_from_minio(parseable_files: List[Dict[str, Any]
             logger.error(f"Failed to delete {file_path} from MinIO: {e}")
 
 
+def _extract_single_archive(archive_path: str, extraction_dir: str):
+    """Extract a single archive file using appropriate method."""
+    ext = os.path.splitext(archive_path)[1].lower()
+
+    if ext == ".zip":
+        with zipfile.ZipFile(archive_path, "r") as zf:
+            zf.extractall(extraction_dir)
+    else:
+        patoolib.extract_archive(archive_path, outdir=extraction_dir)
+
+
 async def extract_archives(
     task_id: str, archive_paths: List[str]
 ) -> Tuple[str, List[ExtractedFile]]:
@@ -319,10 +331,9 @@ async def extract_archives(
 
     loop = asyncio.get_event_loop()
 
-    # Extract all archives
     for archive_path in archive_paths:
         try:
-            await loop.run_in_executor(None, patoolib.extract_archive, archive_path, extraction_dir)
+            await loop.run_in_executor(None, _extract_single_archive, archive_path, extraction_dir)
             logger.info(f"Extracted archive: {archive_path}")
         except Exception as e:
             logger.error(f"Failed to extract {archive_path}: {e}")
