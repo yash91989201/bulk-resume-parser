@@ -98,17 +98,13 @@ export const ParsingTaskCard = ({ task }: { task: ParsingTaskType }) => {
             {task.processedFiles}/{task.totalFiles} files
           </span>
           <div className="flex gap-3">
-            {task.taskStatus === "completed" &&
-              task.createdAt &&
-              task.updatedAt && (
-                <span className="flex items-center gap-1 text-gray-600">
-                  <Clock className="h-3 w-3" />
-                  {formatDuration(
-                    new Date(task.createdAt),
-                    new Date(task.updatedAt),
-                  )}
-                </span>
+            <span className="flex items-center gap-1 text-gray-600">
+              <Clock className="h-3 w-3" />
+              {formatDuration(
+                new Date(task.createdAt),
+                new Date(task.updatedAt),
               )}
+            </span>
             {task.invalidFiles > 0 && (
               <span className="text-red-600">{task.invalidFiles} errors</span>
             )}
