@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 // TYPES
 import type { ParsingTaskType } from "@/lib/types";
 // UTILS
@@ -40,6 +44,7 @@ import {
   ChevronsRight,
   Download,
   Trash2,
+  Sheet,
 } from "lucide-react";
 
 const TASK_STATUSES = [
@@ -104,14 +109,20 @@ const TaskRowActions = ({ task }: TaskRowActionsProps) => {
   const api = useTRPC();
   const queryClient = useQueryClient();
 
-  const { isPending: isDownloadSheetPending, mutateAsync: downloadSheetMutation } =
-    useMutation(api.presignedUrl.getSheetDownloadUrl.mutationOptions());
+  const {
+    isPending: isDownloadSheetPending,
+    mutateAsync: downloadSheetMutation,
+  } = useMutation(api.presignedUrl.getSheetDownloadUrl.mutationOptions());
 
-  const { isPending: isDownloadJsonPending, mutateAsync: downloadJsonMutation } =
-    useMutation(api.presignedUrl.getSheetDownloadUrl.mutationOptions());
+  const {
+    isPending: isDownloadJsonPending,
+    mutateAsync: downloadJsonMutation,
+  } = useMutation(api.presignedUrl.getSheetDownloadUrl.mutationOptions());
 
-  const { isPending: isDeletingParsingTask, mutateAsync: deleteParsingTaskMutation } =
-    useMutation(api.parsingTask.delete.mutationOptions());
+  const {
+    isPending: isDeletingParsingTask,
+    mutateAsync: deleteParsingTaskMutation,
+  } = useMutation(api.parsingTask.delete.mutationOptions());
 
   const downloadSheet = async () => {
     if (task.sheetFilePath) {
@@ -149,7 +160,7 @@ const TaskRowActions = ({ task }: TaskRowActionsProps) => {
           {isDownloadSheetPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Download className="h-4 w-4" />
+            <Sheet className="h-4 w-4" />
           )}
           <span className="sr-only">Download Sheet</span>
         </Button>
@@ -176,7 +187,7 @@ const TaskRowActions = ({ task }: TaskRowActionsProps) => {
         size="sm"
         disabled={isDeletingParsingTask}
         title="Delete Task"
-        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        className="text-red-600 hover:bg-red-50 hover:text-red-700"
       >
         {isDeletingParsingTask ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -194,7 +205,7 @@ export const ParsingTaskList = () => {
   const { data: taskList } = useSuspenseQuery(
     api.parsingTask.getAll.queryOptions(undefined, {
       refetchInterval: 2000,
-    })
+    }),
   );
 
   // Search state
@@ -218,7 +229,7 @@ export const ParsingTaskList = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((task) =>
-        task.taskName.toLowerCase().includes(query)
+        task.taskName.toLowerCase().includes(query),
       );
     }
 
@@ -252,8 +263,8 @@ export const ParsingTaskList = () => {
     <div className="space-y-4">
       {/* Search and Filter Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             placeholder="Search tasks..."
             value={searchQuery}
@@ -269,7 +280,9 @@ export const ParsingTaskList = () => {
             <SelectContent>
               {TASK_STATUSES.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status === "all" ? "All Statuses" : status.replace(/_/g, " ")}
+                  {status === "all"
+                    ? "All Statuses"
+                    : status.replace(/_/g, " ")}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -294,7 +307,10 @@ export const ParsingTaskList = () => {
           <TableBody>
             {paginatedTasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-gray-500">
+                <TableCell
+                  colSpan={7}
+                  className="h-24 text-center text-gray-500"
+                >
                   {filteredTasks.length === 0 && taskList.length > 0
                     ? "No tasks match your search criteria."
                     : "No parsing tasks found."}
@@ -303,7 +319,7 @@ export const ParsingTaskList = () => {
             ) : (
               paginatedTasks.map((task) => {
                 const progressValue = Math.round(
-                  (task.processedFiles / (task.totalFiles || 1)) * 100
+                  (task.processedFiles / (task.totalFiles || 1)) * 100,
                 );
 
                 return (
@@ -311,7 +327,7 @@ export const ParsingTaskList = () => {
                     <TableCell className="font-medium">
                       <Link
                         href={`/dashboard/parsing-tasks/${task.id}`}
-                        className="hover:underline text-blue-600"
+                        className="text-blue-600 hover:underline"
                       >
                         {task.taskName}
                       </Link>
@@ -320,7 +336,7 @@ export const ParsingTaskList = () => {
                       <span
                         className={cn(
                           "rounded-full px-2 py-1 text-xs font-medium capitalize",
-                          getStatusColor(task.taskStatus)
+                          getStatusColor(task.taskStatus),
                         )}
                       >
                         {task.taskStatus.replace(/_/g, " ")}
@@ -329,7 +345,9 @@ export const ParsingTaskList = () => {
                     <TableCell className="min-w-[120px]">
                       <div className="flex items-center gap-2">
                         <Progress value={progressValue} className="h-2 w-20" />
-                        <span className="text-xs text-gray-500">{progressValue}%</span>
+                        <span className="text-xs text-gray-500">
+                          {progressValue}%
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-600">
@@ -340,7 +358,7 @@ export const ParsingTaskList = () => {
                         <Clock className="h-3 w-3" />
                         {formatDuration(
                           new Date(task.createdAt),
-                          new Date(task.updatedAt)
+                          new Date(task.updatedAt),
                         )}
                       </div>
                     </TableCell>
@@ -369,7 +387,10 @@ export const ParsingTaskList = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <span>Rows per page:</span>
-            <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+            <Select
+              value={String(pageSize)}
+              onValueChange={handlePageSizeChange}
+            >
               <SelectTrigger className="w-[70px]">
                 <SelectValue />
               </SelectTrigger>
@@ -413,7 +434,9 @@ export const ParsingTaskList = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+              }
               disabled={currentPage >= totalPages}
               title="Next page"
             >
