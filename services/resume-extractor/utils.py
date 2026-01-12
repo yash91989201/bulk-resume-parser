@@ -563,21 +563,21 @@ async def fetch_parsing_task(task_id: str) -> ParsingTask:
             )
 
 
-async def fetch_extraction_prompt(task_id: str) -> str:
-    """Fetch the extraction prompt for a task."""
+async def fetch_extraction_config(task_id: str) -> Tuple[str, List[str]]:
+    """Fetch the extraction prompt and field keys for a task."""
     url = f"{ServiceConfig.NEXT_API_URL}/parsing-task/extraction-prompt"
     params = {"taskId": task_id}
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as response:
             if response.status != 200:
-                raise Exception(f"Failed to fetch prompt: HTTP {response.status}")
+                raise Exception(f"Failed to fetch extraction config: HTTP {response.status}")
 
             data = await response.json()
             if data.get("status") != "SUCCESS":
                 raise Exception(f"API error: {data.get('message')}")
 
-            return data["data"]["prompt"]
+            return data["data"]["prompt"], data["data"]["fieldKeys"]
 
 
 async def update_parsing_task(task_id: str, updates: Dict[str, Any]) -> bool:

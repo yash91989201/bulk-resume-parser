@@ -29,7 +29,7 @@ from utils import (
     download_archive_files,
     download_parseable_files,
     extract_archives,
-    fetch_extraction_prompt,
+    fetch_extraction_config,
     fetch_parseable_files_from_api,
     fetch_parsing_task,
     get_content_type,
@@ -142,9 +142,11 @@ class ResumeProcessor:
                     task_id, {"taskStatus": TaskStatus.EXTRACTING.value, "errorMessage": None}
                 )
 
-            # Step 2: Fetch extraction prompt
-            extraction_prompt = await fetch_extraction_prompt(task_id)
-            logger.info(f"Extraction prompt fetched ({len(extraction_prompt)} chars)")
+            # Step 2: Fetch extraction config (prompt + field keys)
+            extraction_prompt, field_keys = await fetch_extraction_config(task_id)
+            logger.info(
+                f"Extraction config fetched ({len(extraction_prompt)} chars, {len(field_keys)} fields)"
+            )
 
             # Step 3: Get files based on mode
             if extract_from_archive:
@@ -199,7 +201,9 @@ class ResumeProcessor:
             # Step 4: Process all files
             if valid_files:
                 logger.info(f"Processing {len(valid_files)} files...")
-                results = await self._process_files(valid_files, extraction_prompt, task_id)
+                results = await self._process_files(
+                    valid_files, extraction_prompt, field_keys, task_id
+                )
                 result.results = results
                 result.processed_files = len(results)
 
@@ -260,27 +264,19 @@ class ResumeProcessor:
         self,
         files: List[ExtractedFile],
         extraction_prompt: str,
+        field_keys: List[str],
         task_id: str,
     ) -> List[Dict[str, Any]]:
-        """
-        Process all files: convert to text and extract data.
-
-        Uses concurrent processing with progress tracking.
-        """
         total_files = len(files)
         progress = ProgressTracker(task_id, total_files)
 
-        # Stage 1: Convert all files to text concurrently
         logger.info("Stage 1: Converting files to text...")
         file_paths = [f.local_path for f in files]
         text_results = await FileConverter.convert_batch(
             file_paths, concurrency=ServiceConfig.FILE_PROCESSING_CONCURRENCY
         )
 
-        # Prepare data for LLM extraction
         resume_texts = []
-        file_map = {}  # Map file path to ExtractedFile
-
         for f in files:
             text = text_results.get(f.local_path, "")
             resume_texts.append(
@@ -290,9 +286,7 @@ class ResumeProcessor:
                     "original_name": f.original_name,
                 }
             )
-            file_map[f.local_path] = f
 
-        # Stage 2: Extract data using LLM concurrently
         logger.info("Stage 2: Extracting resume data with LLM...")
 
         async def progress_callback(completed: int, total: int):
@@ -303,6 +297,7 @@ class ResumeProcessor:
         extraction_results = await self.extractor.extract_batch(
             extraction_prompt,
             resume_texts,
+            field_keys,
             progress_callback=progress_callback,
         )
 

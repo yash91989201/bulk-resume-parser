@@ -11,7 +11,7 @@ export const GET = async (req: NextRequest) => {
     }
 
     const task = await db.query.parsingTaskTable.findFirst({
-      where: eq(parsingTaskTable.id, taskId), // Ensure taskId is of the correct type for parsingTaskTable.id
+      where: eq(parsingTaskTable.id, taskId),
       with: {
         extractionConfig: true,
       },
@@ -25,11 +25,16 @@ export const GET = async (req: NextRequest) => {
       throw new Error("Extraction config not found for the task");
     }
 
+    const fieldKeys = task.extractionConfig.config.fields.map((f) => f.key);
+
     return NextResponse.json(
       {
         status: "SUCCESS",
         message: "Extraction config found",
-        data: { prompt: task.extractionConfig.prompt },
+        data: {
+          prompt: task.extractionConfig.prompt,
+          fieldKeys,
+        },
       },
       { status: 200 },
     );

@@ -45,30 +45,16 @@ export const generateExtractionPrompt = (
 };
 
 const generateV0Prompt = (config: ExtractionConfigV0Type) => {
-  // Build core prompt sections
-  const role = `
-    You are an expert resume data extractor with deep expertise in structured information parsing and data normalization.
-  `;
-
-  const context = `
-    You will be provided with a resume text that needs precise information extraction according to strict formatting rules.
-    The extracted data must maintain professional terminology standards and comply with technical validation requirements.
-  `;
-
-  const action = `
-    Analyze the resume text with maximum attention to detail and extract specified fields in exact required formats.
-    Return ONLY a strictly valid JSON object following all rules and without any explanatory text.
-  `;
-
+  // Build field extraction instructions
   const fieldInstructions = config.fields
     .map((field) => {
       const label = field.label ?? field.key;
-      return `• ${label}:
-   - ${field.prompt}
-   - Example: ${field.example ?? "null"}`;
+      const example = field.example ? `Example: ${field.example}` : "";
+      return `${label}: ${field.prompt}${example ? `\n${example}` : ""}`;
     })
     .join("\n\n");
 
+  // Build output template
   const outputFormat = config.fields.reduce(
     (acc, field) => {
       acc[field.key] = "";
@@ -77,36 +63,26 @@ const generateV0Prompt = (config: ExtractionConfigV0Type) => {
     {} as Record<string, string>,
   );
 
-  // Build comprehensive rules section
-  const rules = [
-    "1. Output MUST be STRICTLY a valid JSON with exact field names from specification with no extra text",
-    "2. Validate and normalize ALL values before inclusion",
-    "3. Handle ambiguous cases using priority: explicit mentions > contextual inference > null",
-    "4. Clean data: Remove special characters, formatting artifacts, and non-printable characters",
-    "5. Maintain case sensitivity as specified in field examples",
-    "6. Return null for: Missing data, unparseable values, or failed validation",
-  ].join("\n");
-
   return `
-Role: ${role}
+Extract resume data and return ONLY valid JSON.
 
-Context: ${context}
+TASK:
+Parse the resume text and extract the following fields with precision. Use null for missing or invalid data.
 
-Action: ${action}
-
-INSTRUCTIONS:
-
-EXTRACT THESE FIELDS:
+FIELDS TO EXTRACT:
 ${fieldInstructions}
 
-RULES:
-${rules}
+EXTRACTION RULES:
+- Return strictly valid JSON matching the format below
+- Normalize all values (remove special characters, fix formatting)
+- Use explicit information first, then infer from context if needed
+- Match capitalization shown in examples
+- Set null for: missing data, unparseable values, or unclear information
 
-STRICT OUTPUT FORMAT:
+OUTPUT FORMAT (use exact field names):
 ${JSON.stringify(outputFormat, null, 2)}
 
-RESUME TEXT:
-{{resume_content}}
+Return only the JSON object with no additional text or explanation.
 `;
 };
 

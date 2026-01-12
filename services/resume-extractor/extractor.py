@@ -34,29 +34,22 @@ class ResumeDataExtractor:
         return self._client
 
     @staticmethod
-    def empty_response() -> Dict[str, Any]:
-        return {
-            "full_name": None,
-            "email": None,
-            "phone_number": None,
-            "country_code": None,
-            "invalid_number": None,
-            "designation": None,
-            "department": None,
-            "functional_area": None,
-        }
+    def empty_response(field_keys: List[str]) -> Dict[str, Any]:
+        return {key: None for key in field_keys}
 
-    async def extract_resume_data(self, prompt: str, resume_text: str) -> Dict[str, Any]:
+    async def extract_resume_data(
+        self, prompt: str, resume_text: str, field_keys: List[str]
+    ) -> Dict[str, Any]:
         if not resume_text or not resume_text.strip():
             logger.warning("Empty resume text provided, returning empty response")
-            return self.empty_response()
+            return self.empty_response(field_keys)
 
         full_prompt = f"{prompt}\n\nResume Text:\n{resume_text}"
 
         async with self._semaphore:
-            return await self._extract_with_retry(full_prompt)
+            return await self._extract_with_retry(full_prompt, field_keys)
 
-    async def _extract_with_retry(self, prompt: str) -> Dict[str, Any]:
+    async def _extract_with_retry(self, prompt: str, field_keys: List[str]) -> Dict[str, Any]:
         last_error = None
 
         for attempt in range(self.max_retries):
@@ -72,7 +65,7 @@ class ResumeDataExtractor:
 
                 if not response.text:
                     logger.warning("Empty response from Gemini")
-                    return self.empty_response()
+                    return self.empty_response(field_keys)
 
                 try:
                     return json.loads(response.text)
@@ -93,17 +86,17 @@ class ResumeDataExtractor:
                     await asyncio.sleep(ServiceConfig.LLM_RETRY_DELAY)
 
         logger.error(f"All {self.max_retries} attempts failed. Last error: {last_error}")
-        return self.empty_response()
+        return self.empty_response(field_keys)
 
     async def extract_batch(
         self,
         prompt: str,
         resume_texts: List[Dict[str, str]],
+        field_keys: List[str],
         progress_callback: Optional[callable] = None,
     ) -> List[Dict[str, Any]]:
         total = len(resume_texts)
         completed = 0
-        results = []
 
         async def process_one(item: Dict[str, str]) -> Dict[str, Any]:
             nonlocal completed
@@ -111,7 +104,7 @@ class ResumeDataExtractor:
             file_id = item.get("id", "unknown")
             text = item.get("text", "")
 
-            data = await self.extract_resume_data(prompt, text)
+            data = await self.extract_resume_data(prompt, text, field_keys)
 
             completed += 1
             if progress_callback:
@@ -129,7 +122,7 @@ class ResumeDataExtractor:
                 processed_results.append(
                     {
                         "id": resume_texts[i].get("id", "unknown"),
-                        "data": self.empty_response(),
+                        "data": self.empty_response(field_keys),
                     }
                 )
             else:
@@ -148,13 +141,16 @@ def get_extractor() -> ResumeDataExtractor:
     return _extractor
 
 
-async def extract_resume_data(prompt: str, resume_text: str) -> Dict[str, Any]:
-    return await get_extractor().extract_resume_data(prompt, resume_text)
+async def extract_resume_data(
+    prompt: str, resume_text: str, field_keys: List[str]
+) -> Dict[str, Any]:
+    return await get_extractor().extract_resume_data(prompt, resume_text, field_keys)
 
 
 async def extract_batch(
     prompt: str,
     resume_texts: List[Dict[str, str]],
+    field_keys: List[str],
     progress_callback: Optional[callable] = None,
 ) -> List[Dict[str, Any]]:
-    return await get_extractor().extract_batch(prompt, resume_texts, progress_callback)
+    return await get_extractor().extract_batch(prompt, resume_texts, field_keys, progress_callback)
