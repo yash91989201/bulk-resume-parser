@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "mcp__morph-mcp__edit_file",
+      "mcp__morph-mcp__warpgrep_codebase_search",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

@@ -127,6 +127,21 @@ class ResumeProcessor:
             task = await fetch_parsing_task(task_id)
             logger.info(f"Task details: {task.task_name}, status: {task.task_status.value}")
 
+            # Check if task is already completed or failed - prevent duplicate processing
+            if task.task_status == TaskStatus.COMPLETED:
+                logger.info(f"Task {task_id} already completed, skipping processing")
+                result.success = True
+                result.json_path = task.json_file_path
+                result.sheet_path = task.sheet_file_path
+                return result
+
+            if task.task_status == TaskStatus.FAILED:
+                logger.warning(f"Task {task_id} was previously marked as failed, reprocessing...")
+                # Reset task status to allow reprocessing
+                await update_parsing_task(
+                    task_id, {"taskStatus": TaskStatus.EXTRACTING.value, "errorMessage": None}
+                )
+
             # Step 2: Fetch extraction prompt
             extraction_prompt = await fetch_extraction_prompt(task_id)
             logger.info(f"Extraction prompt fetched ({len(extraction_prompt)} chars)")

@@ -50,7 +50,12 @@ async def process_message(message: AbstractIncomingMessage):
         "taskId": "task-id",
         "extractFromArchive": true/false (optional, defaults to true)
     }
+
+    Uses early-ack pattern: acknowledge message immediately after validation,
+    then rely on database state for task recovery. This prevents RabbitMQ
+    consumer timeout from causing duplicate processing of long-running tasks.
     """
+    task_id = None
     try:
         message_body = message.body.decode()
         logger.info(f"Received message: {message_body}")
@@ -63,6 +68,9 @@ async def process_message(message: AbstractIncomingMessage):
         if not user_id or not task_id:
             raise ValueError("Missing 'userId' or 'taskId' in message")
 
+        await message.ack()
+        logger.info(f"Message acknowledged for task {task_id}, starting processing...")
+
         result = await process_task(user_id, task_id, extract_from_archive)
 
         if result.success:
@@ -71,10 +79,8 @@ async def process_message(message: AbstractIncomingMessage):
                 f"Processed {result.processed_files}/{result.total_files} files "
                 f"in {result.processing_time_seconds:.2f}s"
             )
-            await message.ack()
         else:
             logger.error(f"Task {task_id} failed: {result.error}")
-            await message.nack(requeue=False)
 
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON message: {e}")
@@ -83,8 +89,9 @@ async def process_message(message: AbstractIncomingMessage):
         logger.error(f"Invalid message format: {e}")
         await message.nack(requeue=False)
     except Exception as e:
-        logger.exception(f"Unexpected error processing message: {e}")
-        await message.nack(requeue=False)
+        logger.exception(f"Unexpected error processing message (task={task_id}): {e}")
+        if not message.processed:
+            await message.nack(requeue=False)
 
 
 async def worker(task_queue: asyncio.Queue, worker_id: int):
