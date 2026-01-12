@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxml2-dev \
   libxslt1-dev \
   libreoffice-writer-nogui \
+  antiword \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 

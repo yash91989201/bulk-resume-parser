@@ -503,9 +503,20 @@ async def convert_and_upload_excel(
     loop = asyncio.get_event_loop()
 
     def create_excel():
-        df = pd.DataFrame(results)
-        # Clean up column names
-        df.columns = [col.replace("_", " ").title() for col in df.columns]
+        valid_results = []
+        for i, item in enumerate(results):
+            if isinstance(item, dict):
+                valid_results.append(item)
+            else:
+                logger.warning(f"Skipping non-dict result at index {i}: {type(item).__name__}")
+
+        if not valid_results:
+            logger.warning("No valid results to convert to Excel, creating empty DataFrame")
+            df = pd.DataFrame()
+        else:
+            df = pd.DataFrame(valid_results)
+            df.columns = [col.replace("_", " ").title() for col in df.columns]
+
         df.to_excel(local_path, index=False)
 
     await loop.run_in_executor(None, create_excel)

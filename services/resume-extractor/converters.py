@@ -1,23 +1,27 @@
 """
 File converters for extracting text from different file formats.
 Consolidates: pdf-to-txt, word-to-txt, img-to-txt, rtf-to-txt, txt-passthrough
+
+Uses multi-library fallback chains for maximum reliability:
+- PDF: pymupdf (fitz) → pdfplumber → PyPDF2
+- DOCX: python-docx → mammoth → XML extraction → docx2txt
+- DOC: LibreOffice → antiword
 """
 
 import asyncio
 import logging
 import os
 import shutil
+import subprocess
 import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, Tuple
 from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
-import PyPDF2
 import pytesseract
-from docx import Document
 from striprtf.striprtf import rtf_to_text
 
 from config import ServiceConfig, SupportedExtensions
@@ -41,23 +45,172 @@ class TextConverter:
 
 
 class PDFConverter(TextConverter):
-    """Convert PDF files to text using PyPDF2."""
+    """
+    Convert PDF files to text using multi-library fallback chain.
+
+    Priority order:
+    1. pymupdf (fitz) - Fastest, has OCR support for scanned PDFs
+    2. pdfplumber - Best for tables and complex layouts
+    3. PyPDF2 - Fallback for edge cases
+    """
 
     @staticmethod
-    def _extract_text(file_path: str) -> str:
-        """Extract text from PDF file (blocking operation)."""
+    def _extract_with_pymupdf(file_path: str) -> Tuple[str, str]:
+        """
+        Extract text using PyMuPDF (fastest, best for general use).
+        Returns tuple of (extracted_text, method_used).
+        """
         try:
-            text_content = ""
+            import fitz  # pymupdf
+
+            text_content = []
+            doc = fitz.open(file_path)
+
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+
+                # Try standard text extraction first
+                text = page.get_text("text")
+
+                # If page has minimal text, might be scanned - try OCR
+                if len(text.strip()) < 50:
+                    logger.debug(
+                        f"Page {page_num} has minimal text ({len(text.strip())} chars), attempting OCR"
+                    )
+                    try:
+                        # Get OCR text using pymupdf's built-in OCR
+                        tp = page.get_textpage_ocr(language="eng", dpi=300)
+                        text = page.get_text(textpage=tp)
+                    except Exception as ocr_error:
+                        logger.debug(f"OCR failed on page {page_num}: {ocr_error}")
+
+                if text:
+                    text_content.append(text)
+
+            doc.close()
+
+            final_text = "\n".join(text_content).strip()
+
+            if final_text:
+                return final_text, "pymupdf"
+            else:
+                raise ValueError("No text extracted with pymupdf")
+
+        except Exception as e:
+            logger.debug(f"pymupdf extraction failed for {file_path}: {e}")
+            raise
+
+    @staticmethod
+    def _extract_with_pdfplumber(file_path: str) -> Tuple[str, str]:
+        """
+        Extract text using pdfplumber (best for tables and structured layouts).
+        Returns tuple of (extracted_text, method_used).
+        """
+        try:
+            import pdfplumber
+
+            text_content = []
+
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    # Try table extraction first (resumes often have skill tables)
+                    tables = page.extract_tables()
+
+                    if tables:
+                        for table in tables:
+                            table_text = "\n".join(
+                                [
+                                    " | ".join(
+                                        filter(None, [str(cell) if cell else "" for cell in row])
+                                    )
+                                    for row in table
+                                    if row
+                                ]
+                            )
+                            if table_text.strip():
+                                text_content.append(table_text)
+
+                    # Extract regular text with layout preservation
+                    text = page.extract_text(x_tolerance=3, y_tolerance=3, layout=True)
+
+                    if text:
+                        text_content.append(text)
+
+            final_text = "\n\n".join(text_content).strip()
+
+            if final_text:
+                return final_text, "pdfplumber"
+            else:
+                raise ValueError("No text extracted with pdfplumber")
+
+        except Exception as e:
+            logger.debug(f"pdfplumber extraction failed for {file_path}: {e}")
+            raise
+
+    @staticmethod
+    def _extract_with_pypdf2(file_path: str) -> Tuple[str, str]:
+        """
+        Extract text using PyPDF2 (fallback for edge cases).
+        Returns tuple of (extracted_text, method_used).
+        """
+        try:
+            import PyPDF2
+
+            text_content = []
+
             with open(file_path, "rb") as file:
                 reader = PyPDF2.PdfReader(file)
+
                 for page in reader.pages:
                     page_text = page.extract_text()
                     if page_text:
-                        text_content += page_text + "\n"
-            return text_content.strip()
+                        text_content.append(page_text)
+
+            final_text = "\n".join(text_content).strip()
+
+            if final_text:
+                return final_text, "pypdf2"
+            else:
+                raise ValueError("No text extracted with PyPDF2")
+
         except Exception as e:
-            logger.error(f"Error extracting text from PDF {file_path}: {e}")
-            return ""
+            logger.debug(f"PyPDF2 extraction failed for {file_path}: {e}")
+            raise
+
+    @staticmethod
+    def _extract_text(file_path: str) -> str:
+        """Extract text from PDF using fallback chain (blocking operation)."""
+        methods = [
+            ("pymupdf", PDFConverter._extract_with_pymupdf),
+            ("pdfplumber", PDFConverter._extract_with_pdfplumber),
+            ("pypdf2", PDFConverter._extract_with_pypdf2),
+        ]
+
+        last_error = None
+
+        for method_name, method_func in methods:
+            try:
+                text, actual_method = method_func(file_path)
+
+                # Validate extracted text quality - if too short, try next method
+                if len(text.strip()) < 20:
+                    logger.debug(
+                        f"{method_name} extracted minimal text ({len(text)} chars) for {file_path}, trying next method"
+                    )
+                    continue
+
+                logger.info(
+                    f"PDF extraction success: {os.path.basename(file_path)} using {actual_method} ({len(text)} chars)"
+                )
+                return text
+
+            except Exception as e:
+                last_error = e
+                continue
+
+        # All methods failed
+        logger.error(f"All PDF extraction methods failed for {file_path}. Last error: {last_error}")
+        return ""
 
     @staticmethod
     async def convert(file_path: str) -> str:
@@ -67,23 +220,80 @@ class PDFConverter(TextConverter):
 
 
 class WordConverter(TextConverter):
-    """Convert Word documents (.doc, .docx) to text."""
+    """
+    Convert Word documents (.doc, .docx) to text.
+
+    For .docx files - fallback chain:
+    1. python-docx - Best table support
+    2. mammoth - Best for LLM processing (markdown output)
+    3. XML extraction - Works on corrupted files
+    4. docx2txt - Simple fallback
+
+    For .doc files:
+    1. LibreOffice conversion to .docx → then .docx chain
+    2. antiword - Direct text extraction fallback
+    """
 
     # Semaphore to limit concurrent .doc to .docx conversions
     _conversion_semaphore = asyncio.Semaphore(ServiceConfig.DOC_CONVERSION_CONCURRENCY)
 
     @staticmethod
-    def _extract_from_docx(file_path: str) -> str:
-        """Extract text from .docx file (blocking operation)."""
+    def _extract_with_python_docx(file_path: str) -> str:
+        """
+        Primary method: Extract text using python-docx (best for tables).
+        """
         try:
+            from docx import Document
+
             document = Document(file_path)
-            return "\n".join([para.text for para in document.paragraphs if para.text])
-        except Exception:
-            return WordConverter._extract_from_corrupted_docx(file_path)
+            text_parts = []
+
+            # Extract paragraphs
+            for para in document.paragraphs:
+                if para.text.strip():
+                    text_parts.append(para.text)
+
+            # Extract tables (critical for resumes with skill matrices)
+            for table in document.tables:
+                for row in table.rows:
+                    row_text = " | ".join(cell.text.strip() for cell in row.cells)
+                    if row_text.strip():
+                        text_parts.append(row_text)
+
+            result = "\n".join(text_parts)
+            if result.strip():
+                return result
+            raise ValueError("No text extracted with python-docx")
+
+        except Exception as e:
+            logger.debug(f"python-docx extraction failed: {e}")
+            raise
+
+    @staticmethod
+    def _extract_with_mammoth(file_path: str) -> str:
+        """
+        Secondary method: Convert to markdown using mammoth.
+        Excellent for LLM processing - preserves semantic structure.
+        """
+        try:
+            import mammoth
+
+            with open(file_path, "rb") as docx_file:
+                result = mammoth.convert_to_markdown(docx_file)
+                text = result.value.strip()
+                if text:
+                    return text
+                raise ValueError("No text extracted with mammoth")
+
+        except Exception as e:
+            logger.debug(f"mammoth extraction failed: {e}")
+            raise
 
     @staticmethod
     def _extract_from_corrupted_docx(file_path: str) -> str:
-        """Attempt to extract text from potentially corrupted DOCX files."""
+        """
+        Tertiary method: Direct XML extraction for corrupted files.
+        """
         try:
             with zipfile.ZipFile(file_path) as z:
                 with z.open("word/document.xml") as f:
@@ -98,14 +308,65 @@ class WordConverter(TextConverter):
                 texts = [node.text for node in para.findall(".//w:t", namespaces) if node.text]
                 text_lines.append("".join(texts))
 
-            return "\n".join(filter(None, text_lines))
+            result = "\n".join(filter(None, text_lines))
+            if result.strip():
+                return result
+            raise ValueError("No text extracted from XML")
+
         except Exception as e:
-            logger.error(f"Failed to extract text from corrupted DOCX {file_path}: {e}")
-            return ""
+            logger.debug(f"XML extraction failed for {file_path}: {e}")
+            raise
+
+    @staticmethod
+    def _extract_with_docx2txt(file_path: str) -> str:
+        """
+        Fallback method: Simple text extraction with docx2txt.
+        Fast but loses table structure.
+        """
+        try:
+            import docx2txt
+
+            text = docx2txt.process(file_path)
+            if text and text.strip():
+                return text.strip()
+            raise ValueError("No text extracted with docx2txt")
+
+        except Exception as e:
+            logger.debug(f"docx2txt extraction failed: {e}")
+            raise
+
+    @staticmethod
+    def _extract_from_docx(file_path: str) -> str:
+        """
+        Extract text from .docx with intelligent fallback chain (blocking operation).
+        """
+        strategies = [
+            ("python-docx", WordConverter._extract_with_python_docx),
+            ("mammoth", WordConverter._extract_with_mammoth),
+            ("xml-extraction", WordConverter._extract_from_corrupted_docx),
+            ("docx2txt", WordConverter._extract_with_docx2txt),
+        ]
+
+        for strategy_name, strategy_func in strategies:
+            try:
+                text = strategy_func(file_path)
+                if text and len(text.strip()) > 0:
+                    logger.info(
+                        f"DOCX extraction success: {os.path.basename(file_path)} using {strategy_name} ({len(text)} chars)"
+                    )
+                    return text
+            except Exception:
+                continue
+
+        logger.error(f"All DOCX extraction strategies failed for {file_path}")
+        return ""
 
     @staticmethod
     async def _convert_doc_to_docx(doc_path: str) -> Optional[str]:
-        """Convert .doc to .docx using local LibreOffice."""
+        """
+        Convert .doc to .docx using LibreOffice with best practices.
+        Includes timeout and proper isolation for parallel processing.
+        """
         output_dir = os.path.dirname(doc_path)
         base_name = os.path.splitext(os.path.basename(doc_path))[0]
         docx_path = os.path.join(output_dir, base_name + ".docx")
@@ -119,6 +380,8 @@ class WordConverter(TextConverter):
                 "soffice",
                 "--headless",
                 "--nofirststartwizard",
+                "--norestore",  # Prevent session restoration (fixes race conditions)
+                "--nologo",  # Skip splash screen (faster startup)
                 f"-env:UserInstallation=file://{user_profile}",
                 "--convert-to",
                 "docx",
@@ -130,44 +393,99 @@ class WordConverter(TextConverter):
                 env=env,
             )
 
-            stdout, stderr = await process.communicate()
+            # Add timeout to prevent hangs on corrupted files
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(),
+                    timeout=30.0,  # 30 second timeout
+                )
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+                logger.error(f"LibreOffice conversion timeout for {doc_path}")
+                return None
 
+            # Clean up profile immediately
             shutil.rmtree(user_profile, ignore_errors=True)
 
             if os.path.exists(docx_path):
                 logger.debug(f"Successfully converted {doc_path} to {docx_path}")
                 return docx_path
             else:
-                logger.error(
-                    f"soffice conversion failed (rc={process.returncode}): {stderr.decode()}"
+                logger.warning(
+                    f"LibreOffice conversion failed (rc={process.returncode}): {stderr.decode()}"
                 )
                 return None
+
         except Exception as e:
             logger.error(f"Error converting .doc to .docx: {e}")
+            shutil.rmtree(user_profile, ignore_errors=True)
             return None
+
+    @staticmethod
+    def _extract_doc_with_antiword(doc_path: str) -> str:
+        """
+        Fallback: Extract text from .doc using antiword.
+        Faster than LibreOffice, but limited formatting support.
+        """
+        try:
+            result = subprocess.run(
+                ["antiword", "-m", "UTF-8.txt", doc_path],
+                capture_output=True,
+                text=True,
+                timeout=10.0,
+            )
+
+            if result.returncode == 0 and result.stdout.strip():
+                logger.info(f"DOC extraction success: {os.path.basename(doc_path)} using antiword")
+                return result.stdout.strip()
+            else:
+                raise RuntimeError(f"antiword returned {result.returncode}: {result.stderr}")
+
+        except FileNotFoundError:
+            logger.debug("antiword not installed, skipping fallback")
+            raise
+        except subprocess.TimeoutExpired:
+            logger.warning(f"antiword timeout for {doc_path}")
+            raise
 
     @staticmethod
     async def convert(file_path: str) -> str:
         """Convert Word document to text."""
         loop = asyncio.get_event_loop()
 
-        # Check if it's a .doc file that needs conversion
+        # Handle .doc files (legacy binary format)
         if file_path.lower().endswith(".doc"):
             async with WordConverter._conversion_semaphore:
+                # Try LibreOffice conversion first
                 docx_path = await WordConverter._convert_doc_to_docx(file_path)
                 if docx_path and os.path.exists(docx_path):
-                    text = await loop.run_in_executor(
-                        _thread_pool, WordConverter._extract_from_docx, docx_path
-                    )
-                    # Clean up converted file
                     try:
-                        os.remove(docx_path)
-                    except:
-                        pass
-                    return text
-                else:
-                    return ""
+                        text = await loop.run_in_executor(
+                            _thread_pool, WordConverter._extract_from_docx, docx_path
+                        )
+                        return text
+                    finally:
+                        # Clean up converted file
+                        try:
+                            os.remove(docx_path)
+                        except:
+                            pass
+
+                # Fallback to antiword if LibreOffice failed
+                try:
+                    text = await loop.run_in_executor(
+                        _thread_pool, WordConverter._extract_doc_with_antiword, file_path
+                    )
+                    if text:
+                        return text
+                except Exception as e:
+                    logger.debug(f"antiword fallback failed: {e}")
+
+                logger.error(f"All DOC extraction strategies failed for {file_path}")
+                return ""
         else:
+            # Handle .docx files
             return await loop.run_in_executor(
                 _thread_pool, WordConverter._extract_from_docx, file_path
             )
@@ -248,7 +566,12 @@ class ImageConverter(TextConverter):
             custom_config = r"--psm 6 --oem 3"
             extracted_text = pytesseract.image_to_string(processed, config=custom_config)
 
-            return extracted_text.strip()
+            result = extracted_text.strip()
+            if result:
+                logger.info(
+                    f"Image OCR success: {os.path.basename(file_path)} ({len(result)} chars)"
+                )
+            return result
         except Exception as e:
             logger.error(f"Error extracting text from image {file_path}: {e}")
             return ""
@@ -286,7 +609,12 @@ class RTFConverter(TextConverter):
 
             # Use striprtf to extract text
             text_content = rtf_to_text(rtf_content)
-            return text_content.strip() if text_content else ""
+            result = text_content.strip() if text_content else ""
+            if result:
+                logger.info(
+                    f"RTF extraction success: {os.path.basename(file_path)} ({len(result)} chars)"
+                )
+            return result
         except Exception as e:
             logger.error(f"Error extracting text from RTF {file_path}: {e}")
             return ""
@@ -309,7 +637,12 @@ class TextPassthrough(TextConverter):
         for encoding in encodings:
             try:
                 with open(file_path, "r", encoding=encoding) as f:
-                    return f.read().strip()
+                    result = f.read().strip()
+                    if result:
+                        logger.info(
+                            f"Text read success: {os.path.basename(file_path)} ({len(result)} chars)"
+                        )
+                    return result
             except (UnicodeDecodeError, LookupError):
                 continue
 
@@ -393,9 +726,9 @@ class FileConverter:
 
         output = {}
         for result in results:
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 logger.error(f"Batch conversion error: {result}")
-            else:
+            elif isinstance(result, tuple):
                 path, text = result
                 output[path] = text
 
