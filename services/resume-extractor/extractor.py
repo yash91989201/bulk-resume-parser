@@ -68,7 +68,11 @@ class ResumeDataExtractor:
                     return self.empty_response(field_keys)
 
                 try:
-                    return json.loads(response.text)
+                    parsed = json.loads(response.text)
+                    if isinstance(parsed, dict):
+                        return parsed
+                    logger.warning(f"LLM returned non-dict type: {type(parsed).__name__}")
+                    return self.empty_response(field_keys)
                 except json.JSONDecodeError as e:
                     logger.error(f"Invalid JSON response from Gemini: {e}")
                     last_error = e
